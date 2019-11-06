@@ -1,6 +1,10 @@
 samples:
-  A: data/samples/A.fastq
-  B: data/samples/B.fastq
-  C: data/samples/C.fastq
-
-mutationrate: 1e-2
+  A: 
+    - data/samples/A_L001_R1_001.fastq.gz
+    - data/samples/A_L002_R1_001.fastq.gz
+  B:
+    - data/samples/B_L001_R1_001.fastq.gz
+    - data/samples/B_L002_R1_001.fastq.gz
+  C:
+    - data/samples/C_L001_R1_001.fastq.gz
+    - data/samples/C_L002_R1_001.fastq.gz
