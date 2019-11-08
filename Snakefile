@@ -75,15 +75,15 @@ rule bwa_samse: # for paired-end, may need to do expand for both
 
 rule samtools_sort:
 	input:
-		"2_mapped/{sample}.bam"
+		"2_mapped/{sample}_T.sam"
 	output:
 		bam=protected("2_mapped/{sample}.bam"),
 		sortedbam=protected("2_mapped/{sample}_sorted.bam"),
 		bai=protected("2_mapped/{sample}_sorted.bam.bai")
 	shell:
-		"samtools_mt view -bS -o {output.bam} {input};"
-		"samtools_mt sort {output.bam} -o {output.sortedbam};"
-		"samtools_mt index {output.sortedbam}"
+		"samtools view -bS {input} | "
+		"samtools sort - -o {output.sortedbam}; "
+		"samtools index {output.sortedbam}"
 
 rule countfile:
 	input:
