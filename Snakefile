@@ -2,8 +2,10 @@ configfile: "config.yaml"
 
 rule all:
 	input:
-	    "haha.txt"
-
+	    expand("2_mapped/{sample}_T_sorted.bam.bai", sample=config["samples"])
+	    #expand("qc/{sample}_fastqc.html", sample=config["samples"]),
+	    #expand("qc/{sample}_T_fastqc.html", sample=config["samples"])
+	    
 rule cat:
 	input:
 		lambda wildcards: config["samples"][wildcards.sample]
@@ -18,13 +20,13 @@ rule trim:
 	output:
 		"0_raw/{sample}_T.fastq.gz"
 	log:
-		"log/trimmomatic/{sample}.log"
+		"logs/trimmomatic/{sample}.log"
 	shell:
 		"java -jar /mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/trimmomatic-0.39.jar SE "
 		"{input} {output} "
 		"ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq3-SE.fa:2:30:10 "
 		"ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq2-SE.fa:2:30:10 "
-		"SLIDINGWINDOW:4:28 MINLEN:20  2> {log}"
+		"SLIDINGWINDOW:4:28 MINLEN:20  2>{log}"
 
 rule decompress:
 	input:
@@ -50,7 +52,7 @@ rule qctrim:
 		"qc/{sample}_T_fastqc.html"
 		"qc/{sample}_T_fastqc.zip"
 	shell:
-		"fastqc -o  {input}"
+		"fastqc -o qc/ {input}"
 
 rule bwa_map:
 	input:
@@ -62,38 +64,29 @@ rule bwa_map:
 		"logs/bwa/{sample}.log"
 	threads: 8
 	shell:
-		"bwa aln -t {threads} {input} > {output}"
+		"bwa aln -t {threads} {input} 2>{log} >{output} "
 
 rule bwa_samse: # for paired-end, may need to do expand for both
 	input:
 		"2_mapped/{sample}_T.sai", 
 		"0_raw/{sample}_T.fastq"
 	output:
-		"2_mapped/{sample}_T.sam"
+		temp("2_mapped/{sample}_T.sam")
+	log:
+		"logs/bwa_samse/{sample}.log"
 	shell:
-		"bwa samse -n 50 data/genome.fa {input} >  {output}"
+		"bwa samse -n 50 data/genome.fa {input} 2>{log} >{output}"
 
 rule samtools_sort:
 	input:
 		"2_mapped/{sample}_T.sam"
 	output:
-		bam=protected("2_mapped/{sample}.bam"),
-		sortedbam=protected("2_mapped/{sample}_sorted.bam"),
-		bai=protected("2_mapped/{sample}_sorted.bam.bai")
+		sortedbam=protected("2_mapped/{sample}_T_sorted.bam"),
+		bai=protected("2_mapped/{sample}_T_sorted.bam.bai")
 	shell:
 		"samtools view -bS {input} | "
 		"samtools sort - -o {output.sortedbam}; "
 		"samtools index {output.sortedbam}"
-
-rule countfile:
-	input:
-		gz=expand("2_mapped/{sample}_sorted.bam.bai", sample=config["samples"])
-	output:
-		"haha.txt"
-	shell:
-		"ls {input} | wc > {output}"
-
-
 
 #for i in $(ls *_R1_* | sed 's/_L00[1|2]_R1_001.fastq.gz//' | sort -u ); 
 #do cat ${i}*L001_R1* ${i}*L002_R1* > ${i}_R1.fastq.gz   & done
