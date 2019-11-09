@@ -2,7 +2,8 @@ configfile: "config.yaml"
 
 sampledir = config["sampledir"]
 outputdir = config["outputdir"] # config["outputdir"]
-tempdir   = outputdir + "temp/"
+tempdir   = outputdir + "tmp/"
+# to add log directory
 
 rule all:
 	input:
@@ -18,15 +19,15 @@ rule cat:
 	input:
 		lambda x: map(lambda y: sampledir + y, config["samples"][x.sample])
 	output:
-		temp("0_raw/{sample}.fastq.gz")
+		temp(tempdir + "{sample}.fastq.gz")
 	shell:
 		"cat {input} > {output}"
 
 rule trim:
 	input:
-		"0_raw/{sample}.fastq.gz"
+		tempdir + "{sample}.fastq.gz"
 	output:
-		temp("0_raw/{sample}_T.fastq.gz")
+		temp(tempdir + "{sample}_T.fastq.gz")
 	log:
 		"logs/trimmomatic/{sample}.log"
 	shell:
@@ -38,15 +39,15 @@ rule trim:
 
 rule decompress:
 	input:
-		"0_raw/{sample}_T.fastq.gz"
+		tempdir + "{sample}_T.fastq.gz"
 	output:
-		temp("0_raw/{sample}_T.fastq")
+		temp(tempdir + "{sample}_T.fastq")
 	shell:
 		"gunzip {input}"
 
 rule qc:
 	input:
-		"0_raw/{sample}.fastq.gz"
+		tempdir + "{sample}.fastq.gz"
 	output:
 		"qc/{sample}_fastqc.html"
 		"qc/{sample}_fastqc.zip"
@@ -55,7 +56,7 @@ rule qc:
 
 rule qctrim:
 	input:
-		"0_raw/{sample}_T.fastq.gz"
+		tempdir + "{sample}_T.fastq.gz"
 	output:
 		"qc/{sample}_T_fastqc.html"
 		"qc/{sample}_T_fastqc.zip"
@@ -65,7 +66,7 @@ rule qctrim:
 rule bwa_map:
 	input:
 		"data/genome.fa",
-		"0_raw/{sample}_T.fastq"
+		tempdir + "{sample}_T.fastq"
 	output:
 	    temp("2_mapped/{sample}_T.sai")
 	log:
@@ -77,7 +78,7 @@ rule bwa_map:
 rule bwa_samse: # for paired-end, may need to do expand for both
 	input:
 		"2_mapped/{sample}_T.sai", 
-		"0_raw/{sample}_T.fastq"
+		tempdir + "{sample}_T.fastq"
 	output:
 		temp("2_mapped/{sample}_T.sam")
 	log:
