@@ -1,12 +1,15 @@
 configfile: "config.yaml"
 
 sampledir = config["sampledir"]
-#outputdir = config["outputdir"]
-#tempdir   = outputdir + "/temp/"
+outputdir = config["outputdir"] # config["outputdir"]
+tempdir   = outputdir + "temp/"
 
 rule all:
 	input:
-	    expand("2_mapped/{sample}_T_sorted.bam.bai", sample=config["samples"])
+		# expand takes place in initialisation, we do not know wildcard values expanded upon above
+		# we have to take what is present in the config file
+	    expand("{outputdir}{sample}_T_sorted.bam.bai", sample=config["samples"],
+	    	outputdir = config["outputdir"])
 	    #expand("qc/{sample}_fastqc.html", sample=config["samples"]),
 	    #expand("qc/{sample}_T_fastqc.html", sample=config["samples"])
 	    
@@ -86,8 +89,8 @@ rule samtools_sort:
 	input:
 		"2_mapped/{sample}_T.sam"
 	output:
-		sortedbam=protected("2_mapped/{sample}_T_sorted.bam"),
-		bai=protected("2_mapped/{sample}_T_sorted.bam.bai")
+		sortedbam=protected(outputdir + "{sample}_T_sorted.bam"),
+		bai=protected(outputdir + "{sample}_T_sorted.bam.bai")
 	shell:
 		"samtools view -bS {input} | "
 		"samtools sort - -o {output.sortedbam}; "
