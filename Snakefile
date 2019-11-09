@@ -1,18 +1,21 @@
 configfile: "config.yaml"
 
 sampledir = config["sampledir"]
-outputdir = config["outputdir"] # config["outputdir"]
-tempdir   = outputdir + "tmp/"
-logdir    = outputdir + "log/"
+outputdir = config["outputdir"]
+tempdir   = outputdir + config["subdir"]["tmp"]
+logdir    = outputdir + config["subdir"]["log"]
+qcdir     = outputdir + config["subdir"]["qc"]
 
 rule all:
 	input:
 		# expand takes place in initialisation, we do not know wildcard values expanded upon above
 		# we have to take what is present in the config file
 	    expand("{outputdir}{sample}_T_sorted.bam.bai", sample=config["samples"],
-	    	outputdir = config["outputdir"])
-	    #expand("qc/{sample}_fastqc.html", sample=config["samples"]),
-	    #expand("qc/{sample}_T_fastqc.html", sample=config["samples"])
+	    	outputdir = config["outputdir"]),
+	    #expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"],
+	    #	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
+	    expand("{outputdir}{qc}{sample}_T_fastqc.html", sample=config["samples"], 
+	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"])
 	    
 rule cat:
 	# a nested list of lists
@@ -43,25 +46,29 @@ rule decompress:
 	output:
 		temp(tempdir + "{sample}_T.fastq")
 	shell:
-		"gunzip {input}"
+		"gunzip --keep {input}"
 
+"""
 rule qc:
 	input:
 		tempdir + "{sample}.fastq.gz"
 	output:
-		"qc/{sample}_fastqc.html"
-		"qc/{sample}_fastqc.zip"
+		qcdir + "{sample}_fastqc.html",
+		qcdir + "{sample}_fastqc.zip"
 	shell:
 		"fastqc -o qc/ {input}"
+"""
 
 rule qctrim:
 	input:
 		tempdir + "{sample}_T.fastq.gz"
 	output:
-		"qc/{sample}_T_fastqc.html"
-		"qc/{sample}_T_fastqc.zip"
+		qcdir + "{sample}_T_fastqc.html",
+		qcdir + "{sample}_T_fastqc.zip"
+	log:
+		logdir + "fastqc/{sample}.log"
 	shell:
-		"fastqc -o qc/ {input}"
+		"fastqc -o {qcdir} {input} 2>{log}"
 
 rule bwa_map:
 	input:

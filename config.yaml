@@ -10,4 +10,10 @@ samples:
     - C_L002_R1_001.fastq.gz
 
 sampledir: data/samples/
+
 outputdir: output/
+
+subdir:
+  qc: qc/
+  log: log/
+  tmp: tmp/
