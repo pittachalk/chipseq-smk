@@ -68,7 +68,7 @@ rule bwa_map:
 		"data/genome.fa",
 		tempdir + "{sample}_T.fastq"
 	output:
-	    temp("2_mapped/{sample}_T.sai")
+	    temp(tempdir + "{sample}_T.sai")
 	log:
 		"logs/bwa/{sample}.log"
 	threads: 8
@@ -77,10 +77,10 @@ rule bwa_map:
 
 rule bwa_samse: # for paired-end, may need to do expand for both
 	input:
-		"2_mapped/{sample}_T.sai", 
+		tempdir + "{sample}_T.sai", 
 		tempdir + "{sample}_T.fastq"
 	output:
-		temp("2_mapped/{sample}_T.sam")
+		temp(tempdir + "{sample}_T.sam")
 	log:
 		"logs/bwa_samse/{sample}.log"
 	shell:
@@ -88,7 +88,7 @@ rule bwa_samse: # for paired-end, may need to do expand for both
 
 rule samtools_sort:
 	input:
-		"2_mapped/{sample}_T.sam"
+		tempdir + "{sample}_T.sam"
 	output:
 		sortedbam=protected(outputdir + "{sample}_T_sorted.bam"),
 		bai=protected(outputdir + "{sample}_T_sorted.bam.bai")
