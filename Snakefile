@@ -1,5 +1,9 @@
 configfile: "config.yaml"
 
+sampledir = config["sampledir"]
+#outputdir = config["outputdir"]
+#tempdir   = outputdir + "/temp/"
+
 rule all:
 	input:
 	    expand("2_mapped/{sample}_T_sorted.bam.bai", sample=config["samples"])
@@ -7,10 +11,11 @@ rule all:
 	    #expand("qc/{sample}_T_fastqc.html", sample=config["samples"])
 	    
 rule cat:
+	# a nested list of lists
 	input:
-		lambda wildcards: config["samples"][wildcards.sample]
+		lambda x: map(lambda y: sampledir + y, config["samples"][x.sample])
 	output:
-		"0_raw/{sample}.fastq.gz" # temporary
+		temp("0_raw/{sample}.fastq.gz")
 	shell:
 		"cat {input} > {output}"
 
@@ -18,7 +23,7 @@ rule trim:
 	input:
 		"0_raw/{sample}.fastq.gz"
 	output:
-		"0_raw/{sample}_T.fastq.gz"
+		temp("0_raw/{sample}_T.fastq.gz")
 	log:
 		"logs/trimmomatic/{sample}.log"
 	shell:
@@ -32,7 +37,7 @@ rule decompress:
 	input:
 		"0_raw/{sample}_T.fastq.gz"
 	output:
-		"0_raw/{sample}_T.fastq" # temporary
+		temp("0_raw/{sample}_T.fastq")
 	shell:
 		"gunzip {input}"
 

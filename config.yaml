@@ -1,10 +1,13 @@
 samples:
   A: 
-    - data/samples/A_L001_R1_001.fastq.gz
-    - data/samples/A_L002_R1_001.fastq.gz
+    - A_L001_R1_001.fastq.gz
+    - A_L002_R1_001.fastq.gz
   B:
-    - data/samples/B_L001_R1_001.fastq.gz
-    - data/samples/B_L002_R1_001.fastq.gz
+    - B_L001_R1_001.fastq.gz
+    - B_L002_R1_001.fastq.gz
   C:
-    - data/samples/C_L001_R1_001.fastq.gz
-    - data/samples/C_L002_R1_001.fastq.gz
+    - C_L001_R1_001.fastq.gz
+    - C_L002_R1_001.fastq.gz
+
+sampledir: data/samples/
+outputdir: output/
