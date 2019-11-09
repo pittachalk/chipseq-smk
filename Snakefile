@@ -3,7 +3,7 @@ configfile: "config.yaml"
 sampledir = config["sampledir"]
 outputdir = config["outputdir"] # config["outputdir"]
 tempdir   = outputdir + "tmp/"
-# to add log directory
+logdir    = outputdir + "log/"
 
 rule all:
 	input:
@@ -29,7 +29,7 @@ rule trim:
 	output:
 		temp(tempdir + "{sample}_T.fastq.gz")
 	log:
-		"logs/trimmomatic/{sample}.log"
+		logdir + "trimmomatic/{sample}.log"
 	shell:
 		"java -jar /mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/trimmomatic-0.39.jar SE "
 		"{input} {output} "
@@ -70,7 +70,7 @@ rule bwa_map:
 	output:
 	    temp(tempdir + "{sample}_T.sai")
 	log:
-		"logs/bwa/{sample}.log"
+		logdir + "bwa/{sample}.log"
 	threads: 8
 	shell:
 		"bwa aln -t {threads} {input} 2>{log} >{output} "
@@ -82,7 +82,7 @@ rule bwa_samse: # for paired-end, may need to do expand for both
 	output:
 		temp(tempdir + "{sample}_T.sam")
 	log:
-		"logs/bwa_samse/{sample}.log"
+		logdir + "bwa_samse/{sample}.log"
 	shell:
 		"bwa samse -n 50 data/genome.fa {input} 2>{log} >{output}"
 
