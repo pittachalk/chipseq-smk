@@ -16,7 +16,7 @@ outputdir = config["outputdir"]
 tempdir   = outputdir + config["subdir"]["tmp"]
 logdir    = outputdir + config["subdir"]["log"]
 qcdir     = outputdir + config["subdir"]["qc"]
-
+macs2dir  = outputdir + config["subdir"]["macs2"]
 
 ######################################################################
 ######################################################################
@@ -38,7 +38,10 @@ rule all:
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
-	    expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"])
+	    #expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"]),
+	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
+	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
+
 
 ######################################################################
 ######################################################################
@@ -144,7 +147,60 @@ rule samtools:
 #     ChIP-seq: MACS2
 ######################################################################
 
-# coming soon!
+rule macs2:
+# call peaks with MACS2 
+	input:
+		sample = outputdir + "{id}_sorted.bam",
+		control = lambda x: map(lambda y: outputdir + y + "_sorted.bam", config["ids"][x.id])
+	output:
+		map(lambda x: macs2dir + x, ["{id}_peaks.narrowPeak", "{id}_treat_pileup.bdg", "{id}_control_lambda.bdg"])
+	log:
+		logdir + "macs2/{id}.log"
+	shell:
+		"macs2 callpeak -t {input.sample} -c {input.control} "
+		"--name {wildcards.id} --outdir " + macs2dir + " "
+		"--gsize 8.8e8 --extsize 147 --nomodel -q 0.01 -B --cutoff-analysis"
+
+rule bedgraph:
+# prepare bedgraph of linear fold enrichment and log10 likelihood
+	input: 
+		sample = macs2dir + "{id}_treat_pileup.bdg",
+		control = macs2dir + "{id}_control_lambda.bdg"
+	output:
+		FE = macs2dir + "{id}_linearFE.bdg",
+		logLR = macs2dir + "{id}_logLR.bdg"
+	shell:
+		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.FE} -m FE; "
+		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.logLR} -m logLR --pseudocount 0.00001"
+
+rule igvsort:
+# sort bedgraph
+	input: 
+		FE = macs2dir + "{id}_linearFE.bdg",
+		logLR = macs2dir + "{id}_logLR.bdg"
+	output: 
+		FE = temp(tempdir + "{id}_linearFE_sorted.bdg"),
+		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
+	params:
+		bin=config["igvtools"]["bin"]
+	shell:
+		"{params.bin} sort {input.FE} {output.FE}; "
+		"{params.bin} sort {input.logLR} {output.logLR}"
+
+rule igvtotdf:
+# convert bedgraph to TDF for IGV
+	input: 
+		FE = tempdir + "{id}_linearFE_sorted.bdg",
+		logLR = tempdir + "{id}_logLR_sorted.bdg"
+	output: 
+		FE = macs2dir + "{id}_linearFE_sorted.tdf",
+		logLR = macs2dir + "{id}_logLR_sorted.tdf"
+	params:
+		bin=config["igvtools"]["bin"],
+		ref=config["refgenome"]
+	shell:
+		"{params.bin} toTDF {input.FE} {output.FE} {params.ref}; "
+		"{params.bin} toTDF {input.logLR} {output.logLR} {params.ref}"
 
 
 ######################################################################
@@ -161,6 +217,7 @@ rule copyconfig:
 	shell:
 		"cp {input} {output}"
 
+"""
 rule chipseq:
 # echo a chipseq command
 	input:
@@ -170,3 +227,4 @@ rule chipseq:
 		outputdir + "{id}_chipseq.txt"
 	shell:
 		"echo -t {input.sample} -c {input.control} > {output}"
+"""

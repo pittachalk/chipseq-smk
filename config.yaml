@@ -22,6 +22,7 @@ subdir:
   qc: qc/
   log: log/
   tmp: tmp/
+  macs2: macs2/
 
 refgenome: data/genome.fa
 
@@ -32,3 +33,6 @@ trimmomatic:
     ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq3-SE.fa:2:30:10 
     ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq2-SE.fa:2:30:10 
     SLIDINGWINDOW:4:28 MINLEN:20
+
+igvtools:
+  bin: /mnt/home1/miska/fxq20/home3/software/IGV_2.7.2/igvtools
