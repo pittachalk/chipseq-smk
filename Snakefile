@@ -45,12 +45,12 @@ rule trim:
 		temp(tempdir + "{sample}_T.fastq.gz")
 	log:
 		logdir + "trimmomatic/{sample}.log"
+	params:
+		bin=config["trimmomatic"]["bin"],
+		settings=config["trimmomatic"]["settings"]
 	shell:
-		"java -jar /mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/trimmomatic-0.39.jar SE "
-		"{input} {output} "
-		"ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq3-SE.fa:2:30:10 "
-		"ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq2-SE.fa:2:30:10 "
-		"SLIDINGWINDOW:4:28 MINLEN:20  2>{log}"
+		"java -jar {params.bin} SE "
+		"{input} {output} {params.settings} 2>{log}"
 
 rule decompress:
 	input:
@@ -84,15 +84,16 @@ rule qctrim:
 
 rule bwa_map:
 	input:
-		"data/genome.fa",
 		tempdir + "{sample}_T.fastq"
 	output:
 	    temp(tempdir + "{sample}_T.sai")
 	log:
 		logdir + "bwa/{sample}.log"
 	threads: 8
+	params:
+		ref=config["refgenome"]
 	shell:
-		"bwa aln -t {threads} {input} 2>{log} >{output} "
+		"bwa aln -t {threads} {params.ref} {input} 2>{log} >{output} "
 
 rule bwa_samse: # for paired-end, may need to do expand for both
 	input:
