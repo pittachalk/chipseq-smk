@@ -33,9 +33,9 @@ Final output files (in outputdir):
 
 rule all:
 	input:
-	    expand("{outputdir}{sample}_T_sorted.bam", sample=config["samples"],
+	    expand("{outputdir}{sample}_sorted.bam", sample=config["samples"],
 	    	outputdir = config["outputdir"]),
-	    expand("{outputdir}{qc}{sample}_T_fastqc.html", sample=config["samples"], 
+	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
 	    expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"])
@@ -50,16 +50,16 @@ rule cat:
 	input:
 		lambda x: map(lambda y: sampledir + y, config["samples"][x.sample])
 	output:
-		temp(tempdir + "{sample}.fastq.gz")
+		temp(tempdir + "{sample}_untrimmed.fastq.gz")
 	shell:
 		"cat {input} > {output}"
 
 rule trim:
 # trim Illumina adapters from fastq.gz
 	input:
-		tempdir + "{sample}.fastq.gz"
+		tempdir + "{sample}_untrimmed.fastq.gz"
 	output:
-		temp(tempdir + "{sample}_T.fastq.gz")
+		temp(tempdir + "{sample}.fastq.gz")
 	log:
 		logdir + "trimmomatic/{sample}.log"
 	params:
@@ -72,19 +72,19 @@ rule trim:
 rule decompress:
 # unzip fastq.gz for BWA
 	input:
-		tempdir + "{sample}_T.fastq.gz"
+		tempdir + "{sample}.fastq.gz"
 	output:
-		temp(tempdir + "{sample}_T.fastq")
+		temp(tempdir + "{sample}.fastq")
 	shell:
 		"gunzip --keep {input}"
 
 rule qctrim:
 # run FastQC on trimmed fastq.gz files
 	input:
-		tempdir + "{sample}_T.fastq.gz"
+		tempdir + "{sample}.fastq.gz"
 	output:
-		qcdir + "{sample}_T_fastqc.html",
-		qcdir + "{sample}_T_fastqc.zip"
+		qcdir + "{sample}_fastqc.html",
+		qcdir + "{sample}_fastqc.zip"
 	log:
 		logdir + "fastqc/{sample}.log"
 	shell:
@@ -95,13 +95,14 @@ rule qctrim:
 ######################################################################
 #     BWA alignment and samtools
 ######################################################################
+
 rule bwa_map:
 # run bwa aln to find the SA coordinates of the input reads (.sai file)
 # for paired-end, this part needs to be modified
 	input:
-		tempdir + "{sample}_T.fastq"
+		tempdir + "{sample}.fastq"
 	output:
-	    temp(tempdir + "{sample}_T.sai")
+	    temp(tempdir + "{sample}.sai")
 	log:
 		logdir + "bwa/{sample}.log"
 	threads: 8
@@ -114,10 +115,10 @@ rule bwa_samse:
 # generate alignments from .sai file in the .sam format
 # for paired-end, this part needs to be modified to use bwa_sampe
 	input:
-		tempdir + "{sample}_T.sai", 
-		tempdir + "{sample}_T.fastq"
+		tempdir + "{sample}.sai", 
+		tempdir + "{sample}.fastq"
 	output:
-		temp(tempdir + "{sample}_T.sam")
+		temp(tempdir + "{sample}.sam")
 	log:
 		logdir + "bwa_samse/{sample}.log"
 	shell:
@@ -126,16 +127,24 @@ rule bwa_samse:
 rule samtools:
 # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
 	input:
-		tempdir + "{sample}_T.sam"
+		tempdir + "{sample}.sam"
 	output:
-		flagstat = qcdir + "{sample}_T_alignstat.txt",
-		sortedbam = protected(outputdir + "{sample}_T_sorted.bam"),
-		bai = protected(outputdir + "{sample}_T_sorted.bam.bai")
+		flagstat = qcdir + "{sample}_alignstat.txt",
+		sortedbam = protected(outputdir + "{sample}_sorted.bam"),
+		bai = protected(outputdir + "{sample}_sorted.bam.bai")
 	shell:
 		"samtools flagstat {input} > {output.flagstat}; "
 		"samtools view -bS {input} | "
 		"samtools sort - -o {output.sortedbam}; "
 		"samtools index {output.sortedbam}"
+
+
+######################################################################
+######################################################################
+#     ChIP-seq: MACS2
+######################################################################
+
+# coming soon!
 
 
 ######################################################################
@@ -155,8 +164,8 @@ rule copyconfig:
 rule chipseq:
 # echo a chipseq command
 	input:
-		sample = outputdir + "{id}_T_sorted.bam.bai",
-		control = lambda x: map(lambda y: outputdir + y + "_T_sorted.bam.bai", config["ids"][x.id])
+		sample = outputdir + "{id}_sorted.bam.bai",
+		control = lambda x: map(lambda y: outputdir + y + "_sorted.bam.bai", config["ids"][x.id])
 	output:
 		outputdir + "{id}_chipseq.txt"
 	shell:
