@@ -37,8 +37,8 @@ rule all:
 	    	outputdir = config["outputdir"]),
 	    expand("{outputdir}{qc}{sample}_T_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
-	    expand("{outputdir}config.yaml", outputdir = config["outputdir"])
-
+	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
+	    expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"])
 
 ######################################################################
 ######################################################################
@@ -151,3 +151,13 @@ rule copyconfig:
 		protected(outputdir + "config.yaml")
 	shell:
 		"cp {input} {output}"
+
+rule chipseq:
+# echo a chipseq command
+	input:
+		sample = outputdir + "{id}_T_sorted.bam.bai",
+		control = lambda x: map(lambda y: outputdir + y + "_T_sorted.bam.bai", config["ids"][x.id])
+	output:
+		outputdir + "{id}_chipseq.txt"
+	shell:
+		"echo -t {input.sample} -c {input.control} > {output}"
