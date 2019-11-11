@@ -1,4 +1,7 @@
-configfile: "config.yaml"
+# specify the config file
+CONFIG = "config.yaml" # change this, put quotes
+configfile: CONFIG # do NOT change this
+print(config)
 
 sampledir = config["sampledir"]
 outputdir = config["outputdir"]
@@ -15,8 +18,17 @@ rule all:
 	    #expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"],
 	    #	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}{qc}{sample}_T_fastqc.html", sample=config["samples"], 
-	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"])
-	    
+	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
+	    expand("{outputdir}config.yaml", outputdir = config["outputdir"])
+
+rule copyconfig:
+	input:
+		CONFIG
+	output:
+		protected(outputdir + "config.yaml")
+	shell:
+		"cp {input} {output}"
+ 
 rule cat:
 	# a nested list of lists
 	input:
