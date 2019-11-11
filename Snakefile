@@ -105,13 +105,15 @@ rule bwa_samse: # for paired-end, may need to do expand for both
 	shell:
 		"bwa samse -n 50 data/genome.fa {input} 2>{log} >{output}"
 
-rule samtools_sort:
+rule samtools:
 	input:
 		tempdir + "{sample}_T.sam"
 	output:
-		sortedbam=protected(outputdir + "{sample}_T_sorted.bam"),
-		bai=protected(outputdir + "{sample}_T_sorted.bam.bai")
+		flagstat = qcdir + "{sample}_T_alignstat.txt",
+		sortedbam = protected(outputdir + "{sample}_T_sorted.bam"),
+		bai = protected(outputdir + "{sample}_T_sorted.bam.bai")
 	shell:
+		"samtools flagstat {input} > {output.flagstat}; "
 		"samtools view -bS {input} | "
 		"samtools sort - -o {output.sortedbam}; "
 		"samtools index {output.sortedbam}"
