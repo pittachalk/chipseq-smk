@@ -1,36 +1,52 @@
-# specify the config file
 CONFIG = "config.yaml" # change this, put quotes
+
+# End users should not change anything below this line
+# Parameters for the run should be modified in the CONFIG file
+
+######################################################################
+######################################################################
+#     Setting up
+######################################################################
 configfile: CONFIG # do NOT change this
 print(config)
 
+# obtain directories from the CONFIG file
 sampledir = config["sampledir"]
 outputdir = config["outputdir"]
 tempdir   = outputdir + config["subdir"]["tmp"]
 logdir    = outputdir + config["subdir"]["log"]
 qcdir     = outputdir + config["subdir"]["qc"]
 
+
+######################################################################
+######################################################################
+#     The rule all
+######################################################################
+
+"""
+Final output files (in outputdir):
+- sorted BAM files (and their index)
+- log files for bwa, bwasamse, fastqc, trimmomatic
+- qc files for FASTQC and flagstat
+- a copy of the config.yaml file
+"""
+
 rule all:
 	input:
-		# expand takes place in initialisation, we do not know wildcard values expanded upon above
-		# we have to take what is present in the config file
-	    expand("{outputdir}{sample}_T_sorted.bam.bai", sample=config["samples"],
+	    expand("{outputdir}{sample}_T_sorted.bam", sample=config["samples"],
 	    	outputdir = config["outputdir"]),
-	    #expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"],
-	    #	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}{qc}{sample}_T_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}config.yaml", outputdir = config["outputdir"])
 
-rule copyconfig:
-	input:
-		CONFIG
-	output:
-		protected(outputdir + "config.yaml")
-	shell:
-		"cp {input} {output}"
- 
+
+######################################################################
+######################################################################
+#     Preprocessing of fastq.gz files and quality control
+######################################################################
+
 rule cat:
-	# a nested list of lists
+# concatenate fastq.gz files of each sample
 	input:
 		lambda x: map(lambda y: sampledir + y, config["samples"][x.sample])
 	output:
@@ -39,6 +55,7 @@ rule cat:
 		"cat {input} > {output}"
 
 rule trim:
+# trim Illumina adapters from fastq.gz
 	input:
 		tempdir + "{sample}.fastq.gz"
 	output:
@@ -53,6 +70,7 @@ rule trim:
 		"{input} {output} {params.settings} 2>{log}"
 
 rule decompress:
+# unzip fastq.gz for BWA
 	input:
 		tempdir + "{sample}_T.fastq.gz"
 	output:
@@ -60,18 +78,8 @@ rule decompress:
 	shell:
 		"gunzip --keep {input}"
 
-"""
-rule qc:
-	input:
-		tempdir + "{sample}.fastq.gz"
-	output:
-		qcdir + "{sample}_fastqc.html",
-		qcdir + "{sample}_fastqc.zip"
-	shell:
-		"fastqc -o qc/ {input}"
-"""
-
 rule qctrim:
+# run FastQC on trimmed fastq.gz files
 	input:
 		tempdir + "{sample}_T.fastq.gz"
 	output:
@@ -82,7 +90,14 @@ rule qctrim:
 	shell:
 		"fastqc -o {qcdir} {input} 2>{log}"
 
+
+######################################################################
+######################################################################
+#     BWA alignment and samtools
+######################################################################
 rule bwa_map:
+# run bwa aln to find the SA coordinates of the input reads (.sai file)
+# for paired-end, this part needs to be modified
 	input:
 		tempdir + "{sample}_T.fastq"
 	output:
@@ -95,7 +110,9 @@ rule bwa_map:
 	shell:
 		"bwa aln -t {threads} {params.ref} {input} 2>{log} >{output} "
 
-rule bwa_samse: # for paired-end, may need to do expand for both
+rule bwa_samse:
+# generate alignments from .sai file in the .sam format
+# for paired-end, this part needs to be modified to use bwa_sampe
 	input:
 		tempdir + "{sample}_T.sai", 
 		tempdir + "{sample}_T.fastq"
@@ -107,6 +124,7 @@ rule bwa_samse: # for paired-end, may need to do expand for both
 		"bwa samse -n 50 data/genome.fa {input} 2>{log} >{output}"
 
 rule samtools:
+# get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
 	input:
 		tempdir + "{sample}_T.sam"
 	output:
@@ -119,37 +137,17 @@ rule samtools:
 		"samtools sort - -o {output.sortedbam}; "
 		"samtools index {output.sortedbam}"
 
-#for i in $(ls *_R1_* | sed 's/_L00[1|2]_R1_001.fastq.gz//' | sort -u ); 
-#do cat ${i}*L001_R1* ${i}*L002_R1* > ${i}_R1.fastq.gz   & done
 
-"""
-rule bwa_map:
-	input:
-		"data/genome.fa",
-		lambda wildcards: config["samples"][wildcards.sample]
-	output:
-	    temp("mapped_reads/{sample}.bam")
-	log:
-		"logs/bwa_mem/{sample}.log"
-	threads: 8
-	shell:
-		"bwa mem -t {threads} {input} | "
-		"samtools view  -Sb - > {output} 2> {log}"
+######################################################################
+######################################################################
+#     Miscellaneous
+######################################################################
 
-rule samtools_sort:
+rule copyconfig:
+# copy config.yaml into the outputdir
 	input:
-		"mapped_reads/{sample}.bam"
+		CONFIG
 	output:
-		protected("sorted_reads/{sample}.bam")
+		protected(outputdir + "config.yaml")
 	shell:
-		"samtools sort -T sorted_reads/{wildcards.sample} "
-		"-O bam {input} > {output}"
-
-rule samtools_index:
-	input:
-		"sorted_reads/{sample}.bam"
-	output:
-		"sorted_reads/{sample}.bam.bai"
-	shell:
-		"samtools index {input}"
-"""
+		"cp {input} {output}"
