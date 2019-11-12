@@ -1,18 +1,18 @@
 samples:
-  A: 
-    - A_L001_R1_001.fastq.gz
-    - A_L002_R1_001.fastq.gz
-  B:
-    - B_L001_R1_001.fastq.gz
-    - B_L002_R1_001.fastq.gz
-  C:
-    - C_L001_R1_001.fastq.gz
-    - C_L002_R1_001.fastq.gz
+  ANT1_S3: 
+    - ANT1_S3_L001_R1_001.fastq.gz
+    - ANT1_S3_L002_R1_001.fastq.gz
+  BOY6_S9:
+    - BOY6_S9_L001_R1_001.fastq.gz
+    - BOY6_S9_L002_R1_001.fastq.gz
+  CAT3_S1:
+    - CAT3_S1_L001_R1_001.fastq.gz
+    - CAT3_S1_L002_R1_001.fastq.gz
 
 # specify the inputs
 ids:
-  A: C
-  B: C
+  ANT1_S3: CAT3_S1
+  BOY6_S9: CAT3_S1
 
 sampledir: data/samples/
 
