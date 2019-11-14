@@ -16,6 +16,11 @@ snakemake --cores 16 --restart-times 1 \
   --mail-user {cluster.mailuser} --mail-type {cluster.mailtype}"
 ```
 
+To generate the DAG diagram:
+```
+snakemake --dag --forceall | dot -Tsvg > dag.svg
+```
+
 ## Quirks I noticed about Snakemake
 ### Why are my variables not recognised??!!
 Here is a (relatively) minimal example of a Snakemake file, representative of my workflow/logic.
