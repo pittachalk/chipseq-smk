@@ -15,6 +15,7 @@ outputdir = config["outputdir"]
 tempdir   = outputdir + config["subdir"]["tmp"]
 logdir    = outputdir + config["subdir"]["log"]
 qcdir     = outputdir + config["subdir"]["qc"]
+bamdir    = outputdir + config["subdir"]["bam"]
 macs2dir  = outputdir + config["subdir"]["macs2"]
 
 ######################################################################
@@ -32,8 +33,8 @@ Final output files (in outputdir):
 
 rule all:
 	input:
-	    expand("{outputdir}{sample}_sorted.bam", sample=config["samples"],
-	    	outputdir = config["outputdir"]),
+	    expand("{outputdir}{bamdir}{sample}_sorted.bam", sample=config["samples"],
+	    	outputdir = config["outputdir"], bamdir = config["subdir"]["bam"]),
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
@@ -133,8 +134,8 @@ rule samtools:
 		tempdir + "{sample}.sam"
 	output:
 		flagstat = qcdir + "{sample}_alignstat.txt",
-		sortedbam = protected(outputdir + "{sample}_sorted.bam"),
-		bai = protected(outputdir + "{sample}_sorted.bam.bai")
+		sortedbam = protected(bamdir + "{sample}_sorted.bam"),
+		bai = protected(bamdir + "{sample}_sorted.bam.bai")
 	shell:
 		"samtools flagstat {input} > {output.flagstat}; "
 		"samtools view -bS {input} | "
@@ -150,8 +151,8 @@ rule samtools:
 rule macs2:
 # call peaks with MACS2 
 	input:
-		sample = outputdir + "{id}_sorted.bam",
-		control = lambda x: outputdir + config["ids"][x.id] + "_sorted.bam"
+		sample = bamdir + "{id}_sorted.bam",
+		control = lambda x: bamdir + config["ids"][x.id] + "_sorted.bam"
 	output:
 		map(lambda macs2outfile: macs2dir + "{id}_" + macs2outfile, 
 			["peaks.narrowPeak", "treat_pileup.bdg", "control_lambda.bdg"])
@@ -160,7 +161,8 @@ rule macs2:
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
 		"--name {wildcards.id} --outdir " + macs2dir + " "
-		"--gsize 8.8e8 --extsize 147 --nomodel -q 0.01 -B --cutoff-analysis"
+		"--gsize 8.8e8 --extsize 147 --nomodel -q 0.01 "
+		"-B --cutoff-analysis 2>{log}"
 
 rule bedgraph:
 # prepare bedgraph of linear fold enrichment and log10 likelihood

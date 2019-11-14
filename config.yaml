@@ -22,6 +22,7 @@ subdir:
   qc: qc/
   log: log/
   tmp: tmp/
+  bam: bam/
   macs2: macs2/
 
 refgenome: data/genome.fa
