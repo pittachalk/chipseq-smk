@@ -36,11 +36,8 @@ rule all:
 	    expand("{outputdir}{sample}_sorted.bam", sample=config["samples"],
 	    	outputdir = config["outputdir"]),
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
-	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
-	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
-	    #expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"]),
-	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
-	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
+	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"])
+	    #expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
 
 
 ######################################################################
@@ -141,6 +138,7 @@ rule samtools:
 		"samtools sort - -o {output.sortedbam}; "
 		"samtools index {output.sortedbam}"
 
+"""
 
 ######################################################################
 ######################################################################
@@ -217,14 +215,4 @@ rule copyconfig:
 	shell:
 		"cp {input} {output}"
 
-"""
-rule chipseq:
-# echo a chipseq command
-	input:
-		sample = outputdir + "{id}_sorted.bam.bai",
-		control = lambda x: map(lambda y: outputdir + y + "_sorted.bam.bai", config["ids"][x.id])
-	output:
-		outputdir + "{id}_chipseq.txt"
-	shell:
-		"echo -t {input.sample} -c {input.control} > {output}"
 """

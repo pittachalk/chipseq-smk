@@ -38,7 +38,6 @@ rule all:
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
 	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
-	    #expand("{outputdir}{id}_chipseq.txt", outputdir = config["outputdir"], id=config["ids"]),
 	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
 
@@ -151,9 +150,10 @@ rule macs2:
 # call peaks with MACS2 
 	input:
 		sample = outputdir + "{id}_sorted.bam",
-		control = lambda x: map(lambda y: outputdir + y + "_sorted.bam", config["ids"][x.id])
+		control = lambda x: outputdir + config["ids"][x.id] + "_sorted.bam"
 	output:
-		map(lambda x: macs2dir + x, ["{id}_peaks.narrowPeak", "{id}_treat_pileup.bdg", "{id}_control_lambda.bdg"])
+		map(lambda macs2outfile: macs2dir + "{id}_" + macs2outfile, 
+			["peaks.narrowPeak", "treat_pileup.bdg", "control_lambda.bdg"])
 	log:
 		logdir + "macs2/{id}.log"
 	shell:
@@ -216,15 +216,3 @@ rule copyconfig:
 		protected(outputdir + "config.yaml")
 	shell:
 		"cp {input} {output}"
-
-"""
-rule chipseq:
-# echo a chipseq command
-	input:
-		sample = outputdir + "{id}_sorted.bam.bai",
-		control = lambda x: map(lambda y: outputdir + y + "_sorted.bam.bai", config["ids"][x.id])
-	output:
-		outputdir + "{id}_chipseq.txt"
-	shell:
-		"echo -t {input.sample} -c {input.control} > {output}"
-"""
