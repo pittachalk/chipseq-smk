@@ -8,7 +8,7 @@ mkdir slurm/; snakemake
 If you're on a SLURM cluster, you can use this to make use of multiple cores:
 ```
 mkdir slurm/
-snakemake --cores 16 --restart-times 1 \
+snakemake --cores 8 --restart-times 1 \
   --printshellcmds --keep-going \
   --cluster-config ./cluster.json --cluster \
   "sbatch -J {cluster.jobname} -o {cluster.output} \
