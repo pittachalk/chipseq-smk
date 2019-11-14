@@ -1,0 +1,19 @@
+{
+	"__default__" :
+	{
+		"jobname": "{rule}_{wildcards}",
+		"output": "slurm/{rule}_{wildcards}",
+		"cores" : 1,
+		"nodes" : 1,
+		"partition" : "1804",
+		"mailtype" : "FAIL",
+		"mailuser" : "computejobs@fxquah.com",
+		"output": "slurm/slurm-%j.out"
+	},
+  
+	"bwa_map" :
+	{
+		"cores" : 2,
+		"nodes" : 2
+	}
+}

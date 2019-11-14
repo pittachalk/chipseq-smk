@@ -1,5 +1,21 @@
 # Skeleton for the Snakemake tutorial
 
+## TLDR: one line command that should work
+```
+mkdir slurm/; snakemake
+```
+
+If you're on a SLURM cluster, you can use this to make use of multiple cores:
+```
+mkdir slurm/
+snakemake --cores 16 --restart-times 1 \
+  --printshellcmds --keep-going \
+  --cluster-config ./cluster.json --cluster \
+  "sbatch -J {cluster.jobname} -o {cluster.output} \
+  -c {cluster.cores} -N {cluster.nodes} -p {cluster.partition} \
+  --mail-user {cluster.mailuser} --mail-type {cluster.mailtype}"
+```
+
 ## Quirks I noticed about Snakemake
 ### Why are my variables not recognised??!!
 Here is a (relatively) minimal example of a Snakemake file, representative of my workflow/logic.
