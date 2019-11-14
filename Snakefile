@@ -8,7 +8,6 @@ CONFIG = "config.yaml" # change this, put quotes
 #     Setting up
 ######################################################################
 configfile: CONFIG # do NOT change this
-print(config)
 
 # obtain directories from the CONFIG file
 sampledir = config["sampledir"]
@@ -123,8 +122,10 @@ rule bwa_samse:
 		temp(tempdir + "{sample}.sam")
 	log:
 		logdir + "bwa_samse/{sample}.log"
+	params:
+		ref=config["refgenome"]
 	shell:
-		"bwa samse -n 50 data/genome.fa {input} 2>{log} >{output}"
+		"bwa samse -n 50 {params.ref} {input} 2>{log} >{output}"
 
 rule samtools:
 # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
