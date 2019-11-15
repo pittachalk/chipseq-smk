@@ -158,11 +158,12 @@ rule macs2:
 			["peaks.narrowPeak", "treat_pileup.bdg", "control_lambda.bdg"])
 	log:
 		logdir + "macs2/{id}.log"
+	params:
+		settings=config["macs2"]["settings"]
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
 		"--name {wildcards.id} --outdir " + macs2dir + " "
-		"--gsize 8.8e8 --extsize 147 --nomodel -q 0.01 "
-		"-B --cutoff-analysis 2>{log}"
+		"{params.settings} 2>{log}"
 
 rule bedgraph:
 # prepare bedgraph of linear fold enrichment and log10 likelihood

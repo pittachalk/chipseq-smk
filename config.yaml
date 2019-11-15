@@ -37,3 +37,8 @@ trimmomatic:
 
 igvtools:
   bin: /mnt/home1/miska/fxq20/home3/software/IGV_2.7.2/igvtools
+
+# pls have a space after each line of settings
+macs2:
+  settings:
+    --gsize 8.8e8 --extsize 147 --nomodel -q 0.01 -B --cutoff-analysis 
