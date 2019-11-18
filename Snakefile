@@ -27,6 +27,8 @@ Final output files (in outputdir):
 - log files for bwa, bwasamse, fastqc, trimmomatic
 - qc files for FASTQC and flagstat
 - a copy of the config.yaml file
+
+the user can comment out what is not required
 """
 
 rule all:
@@ -35,8 +37,10 @@ rule all:
 	    	outputdir = config["outputdir"], bamdir = config["subdir"]["bam"]),
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
-	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
+	    expand("{outputdir}{macs2}{id}_peaks.narrowPeak",
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
+	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
+	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"])
 
 
 ######################################################################
