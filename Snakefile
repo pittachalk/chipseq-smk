@@ -1,4 +1,4 @@
-CONFIG = "config.yaml" # change this, put quotes
+configfile: "config.yaml"  # put quotes
 
 # End users should not change anything below this line
 # Parameters for the run should be modified in the CONFIG file
@@ -7,8 +7,6 @@ CONFIG = "config.yaml" # change this, put quotes
 ######################################################################
 #     Setting up
 ######################################################################
-configfile: CONFIG # do NOT change this
-
 # obtain directories from the CONFIG file
 sampledir = config["sampledir"]
 outputdir = config["outputdir"]
@@ -37,7 +35,6 @@ rule all:
 	    	outputdir = config["outputdir"], bamdir = config["subdir"]["bam"]),
 	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
 	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
-	    expand("{outputdir}config.yaml", outputdir = config["outputdir"]),
 	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
 
@@ -205,18 +202,3 @@ rule igvtotdf:
 	shell:
 		"{params.bin} toTDF {input.FE} {output.FE} {params.ref}; "
 		"{params.bin} toTDF {input.logLR} {output.logLR} {params.ref}"
-
-
-######################################################################
-######################################################################
-#     Miscellaneous
-######################################################################
-
-rule copyconfig:
-# copy config.yaml into the outputdir
-	input:
-		CONFIG
-	output:
-		protected(outputdir + "config.yaml")
-	shell:
-		"cp {input} {output}"
