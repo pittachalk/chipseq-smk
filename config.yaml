@@ -26,6 +26,7 @@ subdir:
   macs2: macs2/
 
 refgenome: data/genome.fa
+refchromsizes: data/genome.chrom-sizes
 
 # pls have a space after each line of settings
 trimmomatic:
