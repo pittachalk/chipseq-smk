@@ -178,6 +178,12 @@ rule bedgraph:
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.FE} -m FE; "
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.logLR} -m logLR --pseudocount 0.00001"
 
+
+######################################################################
+######################################################################
+#     Convert bedgraphs to the TDF and BigWig binary formats
+######################################################################
+
 rule igvsort:
 # sort bedgraph
 	input: 
@@ -206,3 +212,24 @@ rule igvtotdf:
 	shell:
 		"{params.bin} toTDF {input.FE} {output.FE} {params.ref}; "
 		"{params.bin} toTDF {input.logLR} {output.logLR} {params.ref}"
+
+# coming soon: bedgraphtobigwig, mergebigwig
+
+
+######################################################################
+######################################################################
+#     Get common peaks between the replicates
+######################################################################
+
+# coming soon: getcommmonpeaks, extendcommonpeaks
+
+
+######################################################################
+######################################################################
+#     Summary files
+######################################################################
+
+# coming soon: idr, multibigwigsummary, pcacorr, heatmap (maybe?)
+
+
+
