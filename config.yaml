@@ -14,6 +14,12 @@ ids:
   ANT1_S3: CAT3_S1
   BOY6_S9: CAT3_S1
 
+# the replicate IDs of the samples
+combined:
+  ANT1_BOY6:
+    - ANT1_S3
+    - BOY6_S9
+
 sampledir: data/samples/
 
 outputdir: output/

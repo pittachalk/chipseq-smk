@@ -41,7 +41,9 @@ rule all:
 	    expand("{outputdir}{macs2}{id}_peaks.narrowPeak",
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
 	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
-	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"])
+	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
+	    expand("{outputdir}{macs2}summary/{combined}_combined.bw", outputdir = config["outputdir"], 
+	    	macs2 = config["subdir"]["macs2"], combined=config["combined"])
 
 
 ######################################################################
@@ -191,7 +193,7 @@ rule igvsort:
 		FE = macs2dir + "{id}_linearFE.bdg",
 		logLR = macs2dir + "{id}_logLR.bdg"
 	output: 
-		FE = temp(tempdir + "{id}_linearFE_sorted.bdg"),
+		FE = tempdir + "{id}_linearFE_sorted.bdg",  # temp this later on!
 		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
 	params:
 		bin=config["igvtools"]["bin"]
@@ -214,7 +216,6 @@ rule igvtotdf:
 		"{params.bin} toTDF {input.FE} {output.FE} {params.ref}; "
 		"{params.bin} toTDF {input.logLR} {output.logLR} {params.ref}"
 
-# coming soon: bedgraphtobigwig, mergebigwig
 rule bedgraphtobigwig:
 # convert bedgraph to bigwig for deeptools
 # this is only done for the linear fold enrichment bedgraph
@@ -227,34 +228,28 @@ rule bedgraphtobigwig:
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"
 
-bedGraphToBigWig BUR2_S7-INBUR2_S12_linear_sorted.bdg /mnt/home1/miska/fxq20/raw/genome/fAstCal1.2/fAstCal1.2-chrom.sizes BUR2_S7-INBUR2_S12_linear.bw
-bigWigMerge BUR2_S7-INBUR2_S12_linear.bw BUR3_S8-INBUR2_S12_linear.bw combined-BUR2_S7-BUR3_S8.bedGraph
-bedGraphToBigWig combined-BUR2_S7-BUR3_S8.bedGraph /mnt/home1/miska/fxq20/raw/genome/fAstCal1.2/fAstCal1.2-chrom.sizes combined-BUR2_S7-BUR3_S8.bw
-
 rule bigwigmerge:
 # merge bigwig files into bedgraph
 # NOTE: mergedbigwig for visualisation only, not recommended as analysis
 	input:
-		macs2dir + "{id}_linearFE.bw" # there's two, need to do expand or lambda
+		lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined])
 	output:
-		tempdir + combined-BUR2_S7-BUR3_S8.bedGraph
+		temp(tempdir + "{combined}_combined.bedGraph")
 	shell:
-		"bigWigMerge {input} {intermediate tempdir + combined-BUR2_S7-BUR3_S8.bedGraph}"
+		"bigWigMerge {input} {output}"
 
 rule converttomultibigwig:
 # convert merged bedgraph into bigwig file
 # NOTE: mergedbigwig for visualisation only, not recommended as analysis
 	input:
-		tempdir + combined-BUR2_S7-BUR3_S8.bedGraph
+		tempdir + "{combined}_combined.bedGraph"
 	output:
-		summarydir + combined-BUR2_S7-BUR3_S8.bw
+		summarydir + "{combined}_combined.bw"
 	params:		
 		ref=config["refchromsizes"]
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"
 
-
-summarydir
 
 ######################################################################
 ######################################################################
