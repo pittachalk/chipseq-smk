@@ -317,36 +317,43 @@ rule multibigwigsummary:
 # computes the average scores for each replicate in every genomic region
 # for the entire genome (bins mode), and for consensus peaks
 	input:
-		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"])
-		#bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined])
-		#overlap=summarydir + "{combined}_commonpeaks.bed"
+		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"]),
+		overlap=summarydir + "summary-unionpeaks.bed"
 	output:
 		npzbins=summarydir + "summarybw-bins.npz",
-		tabbins=summarydir + "summarybw-bins.tab"
-		#npzbins=summarydir + "{combined}-bwsummarybins.npz",
-		#tabbins=summarydir + "{combined}-bwsummarybins.tab",
-		#npzpeak=summarydir + "{combined}-bwsummarypeak.npz",
-		#tabpeak=summarydir + "{combined}-bwsummarypeak.tab"
+		tabbins=summarydir + "summarybw-bins.tab",
+		npzpeak=summarydir + "summarybw-peaks.npz",
+		tabpeak=summarydir + "summarybw-peaks.tab"
 	shell:
 		"multiBigwigSummary bins -b {input.bwfiles} -o {output.npzbins} "
 		"--outRawCounts {output.tabbins}; "
-		#"multiBigwigSummary BED-file -b {input.bwfiles} -o {output.npzpeak} "
-		#"--outRawCounts {output.tabpeak} --BED {input.overlap}"
+		"multiBigwigSummary BED-file -b {input.bwfiles} -o {output.npzpeak} "
+		"--outRawCounts {output.tabpeak} --BED {input.overlap}"
 
 rule pcacorr:
 # plot PCA and correlation plots for replicates of ALL samples
 	input:
-		npzbins=summarydir + "summarybw-bins.npz"
+		npzbins=summarydir + "summarybw-bins.npz",
+		npzpeak=summarydir + "summarybw-peaks.npz"
 	output:
-		pcabins=summarydir + "summarybw-pca.png",
-		corrbins=[summarydir + "summarybw-corr-heatmap" + f for f in [".png", ".tab"]]
+		pcabins=summarydir + "summarybw-bins-pca.png",
+		corrbins=[summarydir + "summarybw-bins-corr-heatmap" + f for f in [".png", ".tab"]],
+		pcapeak=summarydir + "summarybw-peak-pca.png",
+		corrpeak=[summarydir + "summarybw-peak-corr-heatmap" + f for f in [".png", ".tab"]],
 	shell:
 		"plotPCA -in {input.npzbins} -o {output.pcabins} -T 'PCA: whole genome bins'; "
 		
 		"plotCorrelation -in {input.npzbins} --corMethod spearman --skipZeros "
 		"--plotTitle 'Spearman Correlation: whole genome bins' "
 		"--whatToPlot heatmap --colorMap RdYlBu --plotNumbers "
-		"-o {output.corrbins[0]} --outFileCorMatrix {output.corrbins[1]}"
+		"-o {output.corrbins[0]} --outFileCorMatrix {output.corrbins[1]}; "
+
+		"plotPCA -in {input.npzpeak} -o {output.pcapeak} -T 'PCA: union of sample peaks'; "
+		
+		"plotCorrelation -in {input.npzpeak} --corMethod spearman --skipZeros "
+		"--plotTitle 'Spearman Correlation: union of sample peaks' "
+		"--whatToPlot heatmap --colorMap RdYlBu --plotNumbers "
+		"-o {output.corrpeak[0]} --outFileCorMatrix {output.corrpeak[1]}"
 
 
 
