@@ -269,6 +269,7 @@ rule getcommonpeaks:
 
 rule extendcommonpeaks:
 # extend common peaks between two replicates
+# note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
 		a=summarydir + "{combined}_commonpeaks1.bed",
 		b=summarydir + "{combined}_commonpeaks2.bed"
@@ -276,7 +277,7 @@ rule extendcommonpeaks:
 		summarydir + "{combined}_commonpeaks.bed"
 	shell:
 		"cat {input} | bedtools sort | "
-		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,mean | "
+		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,count | "
 		"""awk '$6="."' FS="\t" OFS="\t" """
 		"> {output}"
 
@@ -302,12 +303,13 @@ rule idr:
 
 rule compilepeakunion:
 # get the union of peaks between all samples
+# note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
 		map(lambda x: summarydir + x + "_commonpeaks.bed", config["combined"])
 	output:
 		summarydir + "summary-unionpeaks.bed"
 	shell:
-		"cat {input} | bedtools sort | bedtools merge -c 4,5,6,7,8,9,10 -o mean | "
+		"cat {input} | bedtools sort | bedtools merge -c 4,5,6,7,8,9,10 -o mean,mean,mean,mean,mean,mean,count | "
 		"""awk '$6="."' FS="\t" OFS="\t" """
 		"> {output}"
 
