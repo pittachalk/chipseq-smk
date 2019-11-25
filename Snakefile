@@ -280,6 +280,37 @@ rule extendcommonpeaks:
 ######################################################################
 
 # coming soon: idr, multibigwigsummary, pcacorr, heatmap (maybe?)
+rule idr:
+# calculate IDR statistic for the two replicates
+	input:
+		peakfiles=lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined]),
+		overlap=summarydir + "{combined}_commonpeaks.bed"
+	output:
+		summarydir + "{combined}_idrValues.txt"
+	log:
+		logdir + "idr/{combined}.log"
+	shell:
+		"idr --samples {input.peakfiles} "
+		"--output-file {output} "
+		"--peak-list {input.overlap} --plot 2>{log}"
+
+rule multibigwigsummary:
+# computes the average scores for each replicate in every genomic region
+# for the entire genome (bins mode), and for consensus peaks
+	input:
+		bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined]),
+		overlap=summarydir + "{combined}_commonpeaks.bed"
+	output:
+		npzbins=summarydir + "{combined}-bwsummarybins.npz",
+		tabbins=summarydir + "{combined}-bwsummarybins.tab",
+		npzpeak=summarydir + "{combined}-bwsummarypeak.npz",
+		tabpeak=summarydir + "{combined}-bwsummarypeak.tab"
+	shell:
+		"multiBigwigSummary bins -b {input.bwfiles} -o {output.npzbins} "
+		"--outRawCounts {output.tabbins}; "
+		"multiBigwigSummary BED-file -b {input.bwfiles} -o {output.npzpeak} "
+		"--outRawCounts {output.tabpeak} --BED {input.overlap}"
+
 
 
 
