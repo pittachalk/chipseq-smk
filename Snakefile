@@ -256,9 +256,24 @@ rule converttomultibigwig:
 #     Get common peaks between the replicates
 ######################################################################
 
-# coming soon: getcommmonpeaks, extendcommonpeaks
+rule getcommonpeaks:
+# find common peaks between two replicates (it doesn't work for >2 atm)
+	input:
+		lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined])
+	output:
+		summarydir + "{combined}_commonpeaks.bed"
+	shell:
+		"bedtools intersect -a {input[0]} -b {input[1]} -wo > {output}"
 
-
+rule extendcommonpeaks:
+# extend common peaks between two replicates
+	input:
+		bed=summarydir + "{combined}_commonpeaks.bed"
+	output:
+		bed=summarydir + "{combined}_commonpeaks_extend.bed"
+	shell:
+		"script/extendCommonPeaks.R"
+		
 ######################################################################
 ######################################################################
 #     Summary files
