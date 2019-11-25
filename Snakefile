@@ -253,7 +253,7 @@ rule converttomultibigwig:
 
 ######################################################################
 ######################################################################
-#     Get common peaks between the replicates
+#     Compare individual pairs of replicates
 ######################################################################
 
 rule getcommonpeaks:
@@ -268,18 +268,12 @@ rule getcommonpeaks:
 rule extendcommonpeaks:
 # extend common peaks between two replicates
 	input:
-		bed=summarydir + "{combined}_commonpeaks.bed"
+		summarydir + "{combined}_commonpeaks.bed"
 	output:
-		bed=summarydir + "{combined}_commonpeaks_extend.bed"
+		summarydir + "{combined}_commonpeaks_extend.bed"
 	shell:
-		"script/extendCommonPeaks.R"
-		
-######################################################################
-######################################################################
-#     Summary files
-######################################################################
+		"Rscript script/extendCommonPeaks.R {input} {output}"
 
-# coming soon: idr, multibigwigsummary, pcacorr, heatmap (maybe?)
 rule idr:
 # calculate IDR statistic for the two replicates
 	input:
@@ -294,23 +288,56 @@ rule idr:
 		"--output-file {output} "
 		"--peak-list {input.overlap} --plot 2>{log}"
 
+
+######################################################################
+######################################################################
+#     Summary files
+######################################################################
+
+rule compilepeakunion:
+# get the union of peaks between all samples
+	input:
+		map(lambda x: summarydir + x + "_commonpeaks_extend.bed", config["combined"])
+	output:
+		summarydir + "summary-unionpeaks.bed"
+	shell:
+		"cat {input} | bedtools sort | bedtools merge -c 5,7,8,9,10 -o mean > {output}"
+
+
 rule multibigwigsummary:
 # computes the average scores for each replicate in every genomic region
 # for the entire genome (bins mode), and for consensus peaks
 	input:
-		bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined]),
-		overlap=summarydir + "{combined}_commonpeaks.bed"
+		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"])
+		#bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined])
+		#overlap=summarydir + "{combined}_commonpeaks.bed"
 	output:
-		npzbins=summarydir + "{combined}-bwsummarybins.npz",
-		tabbins=summarydir + "{combined}-bwsummarybins.tab",
-		npzpeak=summarydir + "{combined}-bwsummarypeak.npz",
-		tabpeak=summarydir + "{combined}-bwsummarypeak.tab"
+		npzbins=summarydir + "summarybw-bins.npz",
+		tabbins=summarydir + "summarybw-bins.tab"
+		#npzbins=summarydir + "{combined}-bwsummarybins.npz",
+		#tabbins=summarydir + "{combined}-bwsummarybins.tab",
+		#npzpeak=summarydir + "{combined}-bwsummarypeak.npz",
+		#tabpeak=summarydir + "{combined}-bwsummarypeak.tab"
 	shell:
 		"multiBigwigSummary bins -b {input.bwfiles} -o {output.npzbins} "
 		"--outRawCounts {output.tabbins}; "
-		"multiBigwigSummary BED-file -b {input.bwfiles} -o {output.npzpeak} "
-		"--outRawCounts {output.tabpeak} --BED {input.overlap}"
+		#"multiBigwigSummary BED-file -b {input.bwfiles} -o {output.npzpeak} "
+		#"--outRawCounts {output.tabpeak} --BED {input.overlap}"
 
+rule pcacorr:
+# plot PCA and correlation plots for replicates of ALL samples
+	input:
+		npzbins=summarydir + "summarybw-bins.npz"
+	output:
+		pcabins=summarydir + "summarybw-pca.png",
+		corrbins=[summarydir + "summarybw-corr-heatmap" + f for f in [".png", ".tab"]]
+	shell:
+		"plotPCA -in {input.npzbins} -o {output.pcabins} -T 'PCA: whole genome bins'; "
+		
+		"plotCorrelation -in {input.npzbins} --corMethod spearman --skipZeros "
+		"--plotTitle 'Spearman Correlation: whole genome bins' "
+		"--whatToPlot heatmap --colorMap RdYlBu --plotNumbers "
+		"-o {output.corrbins[0]} --outFileCorMatrix {output.corrbins[1]}"
 
 
 
