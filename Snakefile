@@ -261,18 +261,24 @@ rule getcommonpeaks:
 	input:
 		lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined])
 	output:
-		summarydir + "{combined}_commonpeaks.bed"
+		a=temp(summarydir + "{combined}_commonpeaks1.bed"),
+		b=temp(summarydir + "{combined}_commonpeaks2.bed")
 	shell:
-		"bedtools intersect -a {input[0]} -b {input[1]} -wo > {output}"
+		"bedtools intersect -a {input[0]} -b {input[1]} -wa > {output.a}; "
+		"bedtools intersect -a {input[1]} -b {input[0]} -wa > {output.b}"
 
 rule extendcommonpeaks:
 # extend common peaks between two replicates
 	input:
-		summarydir + "{combined}_commonpeaks.bed"
+		a=summarydir + "{combined}_commonpeaks1.bed",
+		b=summarydir + "{combined}_commonpeaks2.bed"
 	output:
-		summarydir + "{combined}_commonpeaks_extend.bed"
+		summarydir + "{combined}_commonpeaks.bed"
 	shell:
-		"Rscript script/extendCommonPeaks.R {input} {output}"
+		"cat {input} | bedtools sort | "
+		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,mean | "
+		"""awk '$6="."' FS="\t" OFS="\t" """
+		"> {output}"
 
 rule idr:
 # calculate IDR statistic for the two replicates
@@ -297,12 +303,13 @@ rule idr:
 rule compilepeakunion:
 # get the union of peaks between all samples
 	input:
-		map(lambda x: summarydir + x + "_commonpeaks_extend.bed", config["combined"])
+		map(lambda x: summarydir + x + "_commonpeaks.bed", config["combined"])
 	output:
 		summarydir + "summary-unionpeaks.bed"
 	shell:
-		"cat {input} | bedtools sort | bedtools merge -c 5,7,8,9,10 -o mean > {output}"
-
+		"cat {input} | bedtools sort | bedtools merge -c 4,5,6,7,8,9,10 -o mean | "
+		"""awk '$6="."' FS="\t" OFS="\t" """
+		"> {output}"
 
 rule multibigwigsummary:
 # computes the average scores for each replicate in every genomic region
