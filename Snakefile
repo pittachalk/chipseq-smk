@@ -355,5 +355,44 @@ rule pcacorr:
 		"--whatToPlot heatmap --colorMap RdYlBu --plotNumbers "
 		"-o {output.corrpeak[0]} --outFileCorMatrix {output.corrpeak[1]}"
 
+rule computematrix:
+# calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
+	input:
+		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"]),
+		overlap=summarydir + "summary-unionpeaks.bed"
+	output:
+		gzipped=summarydir + "summarybw-peaks-matrix.mat.gz",
+		tab=summarydir + "summarybw-peaks-matrix.tab"
+	shell:
+		"computeMatrix scale-regions "
+		"-S {input.bwfiles} -R {input.overlap} "
+		"--beforeRegionStartLength 3000 --afterRegionStartLength 3000 "
+		"--regionBodyLength 5000 --skipZeros "
+		"-o {output.gzipped} --outFileNameMatrix {output.tab}"
+
+rule plotheatmap:
+# create heatmap for scores associated with the union of peak regions
+	input:
+		summarydir + "summarybw-peaks-matrix.mat.gz"
+	output:
+		summarydir + "summarybw-peaks-matrix-heatmap.png"
+	shell:
+		"plotHeatmap -m {input} -out {output} "
+		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "
+		"--startLabel 'peak start' --endLabel 'peak end' "
+		"--yAxisLabel 'average signal' --xAxisLabel ' ' "
+		"--legendLocation none  --kmeans 3"
+
+rule plotprofile:
+# create profiles for scores associated with the union of peak regions
+	input:
+		summarydir + "summarybw-peaks-matrix.mat.gz"
+	output:
+		summarydir + "summarybw-peaks-matrix-profiles.png"
+	shell:
+		"plotProfile -m {input} -out {output} "
+		"--plotType=fill --plotTitle 'peak profile' "
+		"--startLabel 'peak start' --endLabel 'peak end' "
+		"--plotHeight 12 --plotWidth 8 --kmeans 3"
 
 
