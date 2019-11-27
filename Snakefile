@@ -296,6 +296,35 @@ rule idr:
 		"--peak-list {input.overlap} --plot 2>{log}"
 
 
+rule computematrixbysample:
+# calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
+	input:
+		bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined]),
+		overlap=summarydir + "{combined}_commonpeaks.bed"
+	output:
+		gzipped=temp(summarydir + "{combined}-peaks-matrix.mat.gz")
+	shell:
+		"computeMatrix scale-regions "
+		"-S {input.bwfiles} -R {input.overlap} "
+		"--beforeRegionStartLength 3000 --afterRegionStartLength 3000 "
+		"--regionBodyLength 5000 --skipZeros "
+		"-o {output.gzipped}"
+
+rule plotheatmapbysample:
+# create heatmap for scores associated with common peaks (by sample)
+# for quality check --- see consistency of peak profiles
+	input:
+		summarydir + "{combined}-peaks-matrix.mat.gz"
+	output:
+		summarydir + "{combined}-peaks-matrix-heatmap.png"
+	shell:
+		"plotHeatmap -m {input} -out {output} "
+		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "
+		"--startLabel 'peak start' --endLabel 'peak end' "
+		"--yAxisLabel 'average signal' --xAxisLabel ' ' "
+		"--legendLocation none  --kmeans 3"
+
+
 ######################################################################
 ######################################################################
 #     Summary files
@@ -355,8 +384,8 @@ rule pcacorr:
 		"--whatToPlot heatmap --colorMap RdYlBu --plotNumbers "
 		"-o {output.corrpeak[0]} --outFileCorMatrix {output.corrpeak[1]}"
 
-rule computematrix:
-# calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
+rule computematrixall:
+# calculate scores per genome regions across all samples
 	input:
 		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"]),
 		overlap=summarydir + "summary-unionpeaks.bed"
@@ -370,7 +399,7 @@ rule computematrix:
 		"--regionBodyLength 5000 --skipZeros "
 		"-o {output.gzipped} --outFileNameMatrix {output.tab}"
 
-rule plotheatmap:
+rule plotheatmapall:
 # create heatmap for scores associated with the union of peak regions
 	input:
 		summarydir + "summarybw-peaks-matrix.mat.gz"
@@ -382,17 +411,3 @@ rule plotheatmap:
 		"--startLabel 'peak start' --endLabel 'peak end' "
 		"--yAxisLabel 'average signal' --xAxisLabel ' ' "
 		"--legendLocation none  --kmeans 3"
-
-rule plotprofile:
-# create profiles for scores associated with the union of peak regions
-	input:
-		summarydir + "summarybw-peaks-matrix.mat.gz"
-	output:
-		summarydir + "summarybw-peaks-matrix-profiles.png"
-	shell:
-		"plotProfile -m {input} -out {output} "
-		"--plotType=fill --plotTitle 'peak profile' "
-		"--startLabel 'peak start' --endLabel 'peak end' "
-		"--plotHeight 12 --plotWidth 8 --kmeans 3"
-
-
