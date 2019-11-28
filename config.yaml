@@ -30,6 +30,8 @@ subdir:
   tmp: tmp/
   bam: bam/
   macs2: macs2/
+  summary: summary/
+  combined: combined/
 
 refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes

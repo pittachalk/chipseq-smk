@@ -24,28 +24,41 @@ combineddir = macs2dir + config["subdir"]["combined"] # subdir for combined repl
 ######################################################################
 
 """
-Final output files (in outputdir):
-- sorted BAM files (and their index)
-- log files for bwa, bwasamse, fastqc, trimmomatic
-- qc files for FASTQC and flagstat
-- a copy of the config.yaml file
-
+Final output files
 Note that the user can comment out what is not required
 """
 
 rule all:
 	input:
-	    expand("{outputdir}{bamdir}{sample}_sorted.bam", sample=config["samples"],
-	    	outputdir = config["outputdir"], bamdir = config["subdir"]["bam"]),
-	    expand("{outputdir}{qc}{sample}_fastqc.html", sample=config["samples"], 
-	    	outputdir = config["outputdir"], qc = config["subdir"]["qc"]),
-	    expand("{outputdir}{macs2}{id}_peaks.narrowPeak",
-	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
-	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
-	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
-	    expand("{outputdir}{macs2}{combineddir}{combined}_combined.bw", 
-	    	outputdir = config["outputdir"], macs2 = config["subdir"]["macs2"], 
-	    	combined=config["combined"], combineddir=config["subdir"]["combined"])
+		# alignment files for individuals:
+		# sorted BAM files and quality control reports
+	    expand(["{outputdir}{bamdir}{sample}_sorted.bam",
+	    		"{outputdir}{qc}{sample}_fastqc.html"], 
+	    	sample=config["samples"], outputdir=config["outputdir"], 
+	    	bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
+
+	    # MACS2 output for individuals: BED files for peaks, binary TDF for IGV
+	    expand(["{outputdir}{macs2}{id}_peaks.narrowPeak",
+				"{outputdir}{macs2}{id}_linearFE_sorted.tdf", 
+				"{outputdir}{macs2}{id}_logLR_sorted.tdf"],
+	    	outputdir=config["outputdir"], id=config["ids"], macs2=config["subdir"]["macs2"]),
+
+	    # combined output from pairs of replicates:
+	    # common peaks BED, IDR values, heatmap of peak profiles
+	    expand(["{outputdir}{macs2}{combineddir}{combined}_commonpeaks.bed",
+	    	    "{outputdir}{macs2}{combineddir}{combined}_idrValues.txt",
+	    	    "{outputdir}{macs2}{combineddir}{combined}-peaks-matrix-heatmap.png"],
+			outputdir=config["outputdir"], macs2=config["subdir"]["macs2"], 
+			combineddir=config["subdir"]["combined"], combined=config["combined"] ),
+
+	    # summary files for everything:
+	    # union of all peaks BED, PCA, correlation and heatmap of peak profiles
+	    expand(["{outputdir}{macs2}{summarydir}summary-unionpeaks.bed",
+	    	    "{outputdir}{macs2}{summarydir}summarybw-peak-pca.png",
+	    	    "{outputdir}{macs2}{summarydir}summarybw-peak-corr-heatmap.png",
+	    	    "{outputdir}{macs2}{summarydir}summarybw-peaks-matrix-heatmap.png"],
+			outputdir=config["outputdir"],
+			macs2=config["subdir"]["macs2"], summarydir=config["subdir"]["summary"] )
 
 
 ######################################################################
