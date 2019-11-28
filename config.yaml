@@ -1,3 +1,9 @@
+######################################################################
+######################################################################
+#     Sample information
+######################################################################
+
+# FASTQ files for each individual sample
 samples:
   ANT1_S3: 
     - ANT1_S3_L001_R1_001.fastq.gz
@@ -9,34 +15,59 @@ samples:
     - CAT3_S1_L001_R1_001.fastq.gz
     - CAT3_S1_L002_R1_001.fastq.gz
 
-# specify the inputs
+# input key for each individual sample
 ids:
   ANT1_S3: CAT3_S1
   BOY6_S9: CAT3_S1
 
-# the replicate IDs of the samples
+# combine samples which are replicates
 combined:
   ANT1_BOY6:
     - ANT1_S3
     - BOY6_S9
 
+
+######################################################################
+######################################################################
+#     Directory information
+# 
+# directories should to be relative to the Snakemake working directory 
+# e.g. simply write as output/, no need to prefix with "./"
+#
+# an exception can be made for sampledir,
+# as these (large) files might be somewhere else 
+# in this case, use an absolute dir (e.g. /path/to/raw/FASTQ/)
+######################################################################
+
+# location of raw fastq files
 sampledir: data/samples/
 
+# location for output files of Snakemake pipeline
 outputdir: output/
 
+# subdirectories within outputdir
+# e.g. qc: qc/ will become outputdir/qc/
 subdir:
   qc: qc/
   log: log/
   tmp: tmp/
   bam: bam/
   macs2: macs2/
-  summary: summary/
-  combined: combined/
+  summary: summary/    # processed as subdir of macs2
+  combined: combined/  # processed as subdir of macs2
 
+
+######################################################################
+######################################################################
+#     Settings for packages
+######################################################################
+
+# reference genome 
 refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes
 
-# pls have a space after each line of settings
+# settings for trimmomatic
+# there should be a space after each line of settings
 trimmomatic:
   bin: /mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/trimmomatic-0.39.jar
   settings:
@@ -44,10 +75,13 @@ trimmomatic:
     ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq2-SE.fa:2:30:10 
     SLIDINGWINDOW:4:28 MINLEN:20
 
+# location for igvtools binary
 igvtools:
   bin: /mnt/home1/miska/fxq20/home3/software/IGV_2.7.2/igvtools
 
-# pls have a space after each line of settings
+# settings for MACS2
+# there should be a space after each line of settings
 macs2:
   settings:
     --gsize 8.8e8 --extsize 147 --nomodel -q 0.01 -B --cutoff-analysis 
+
