@@ -8,14 +8,15 @@ configfile: "config.yaml"  # put quotes
 #     Setting up
 ######################################################################
 # obtain directories from the CONFIG file
-sampledir  = config["sampledir"]
-outputdir  = config["outputdir"]
-tempdir    = outputdir + config["subdir"]["tmp"]
-logdir     = outputdir + config["subdir"]["log"]
-qcdir      = outputdir + config["subdir"]["qc"]
-bamdir     = outputdir + config["subdir"]["bam"]
-macs2dir   = outputdir + config["subdir"]["macs2"]
-summarydir = macs2dir + "summary/"  # subdir for combined ChIP results
+sampledir   = config["sampledir"]
+outputdir   = config["outputdir"]
+tempdir     = outputdir + config["subdir"]["tmp"]
+logdir      = outputdir + config["subdir"]["log"]
+qcdir       = outputdir + config["subdir"]["qc"]
+bamdir      = outputdir + config["subdir"]["bam"]
+macs2dir    = outputdir + config["subdir"]["macs2"]
+summarydir  = macs2dir + config["subdir"]["summary"]  # subdir for all samples
+combineddir = macs2dir + config["subdir"]["combined"] # subdir for combined replicates
 
 ######################################################################
 ######################################################################
@@ -29,7 +30,7 @@ Final output files (in outputdir):
 - qc files for FASTQC and flagstat
 - a copy of the config.yaml file
 
-the user can comment out what is not required
+Note that the user can comment out what is not required
 """
 
 rule all:
@@ -42,8 +43,9 @@ rule all:
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
 	    expand(["{outputdir}{macs2}{id}_linearFE_sorted.tdf", "{outputdir}{macs2}{id}_logLR_sorted.tdf"], 
 	    	outputdir = config["outputdir"], id=config["ids"], macs2 = config["subdir"]["macs2"]),
-	    expand("{outputdir}{macs2}summary/{combined}_combined.bw", outputdir = config["outputdir"], 
-	    	macs2 = config["subdir"]["macs2"], combined=config["combined"])
+	    expand("{outputdir}{macs2}{combineddir}{combined}_combined.bw", 
+	    	outputdir = config["outputdir"], macs2 = config["subdir"]["macs2"], 
+	    	combined=config["combined"], combineddir=config["subdir"]["combined"])
 
 
 ######################################################################
@@ -138,8 +140,8 @@ rule samtools:
 		tempdir + "{sample}.sam"
 	output:
 		flagstat = qcdir + "{sample}_alignstat.txt",
-		sortedbam = protected(bamdir + "{sample}_sorted.bam"),
-		bai = protected(bamdir + "{sample}_sorted.bam.bai")
+		sortedbam = bamdir + "{sample}_sorted.bam",
+		bai = bamdir + "{sample}_sorted.bam.bai"
 	shell:
 		"samtools flagstat {input} > {output.flagstat}; "
 		"samtools view -bS {input} | "
@@ -244,7 +246,7 @@ rule converttomultibigwig:
 	input:
 		tempdir + "{combined}_combined.bedGraph"
 	output:
-		summarydir + "{combined}_combined.bw"
+		combineddir + "{combined}_combined.bw"
 	params:		
 		ref=config["refchromsizes"]
 	shell:
@@ -261,8 +263,8 @@ rule getcommonpeaks:
 	input:
 		lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined])
 	output:
-		a=temp(summarydir + "{combined}_commonpeaks1.bed"),
-		b=temp(summarydir + "{combined}_commonpeaks2.bed")
+		a=temp(combineddir + "{combined}_commonpeaks1.bed"),
+		b=temp(combineddir + "{combined}_commonpeaks2.bed")
 	shell:
 		"bedtools intersect -a {input[0]} -b {input[1]} -wa > {output.a}; "
 		"bedtools intersect -a {input[1]} -b {input[0]} -wa > {output.b}"
@@ -271,10 +273,10 @@ rule extendcommonpeaks:
 # extend common peaks between two replicates
 # note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
-		a=summarydir + "{combined}_commonpeaks1.bed",
-		b=summarydir + "{combined}_commonpeaks2.bed"
+		a=combineddir + "{combined}_commonpeaks1.bed",
+		b=combineddir + "{combined}_commonpeaks2.bed"
 	output:
-		summarydir + "{combined}_commonpeaks.bed"
+		combineddir + "{combined}_commonpeaks.bed"
 	shell:
 		"cat {input} | bedtools sort | "
 		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,count | "
@@ -285,9 +287,9 @@ rule idr:
 # calculate IDR statistic for the two replicates
 	input:
 		peakfiles=lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined]),
-		overlap=summarydir + "{combined}_commonpeaks.bed"
+		overlap=combineddir + "{combined}_commonpeaks.bed"
 	output:
-		summarydir + "{combined}_idrValues.txt"
+		combineddir + "{combined}_idrValues.txt"
 	log:
 		logdir + "idr/{combined}.log"
 	shell:
@@ -295,14 +297,13 @@ rule idr:
 		"--output-file {output} "
 		"--peak-list {input.overlap} --plot 2>{log}"
 
-
 rule computematrixbysample:
 # calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
 	input:
 		bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined]),
-		overlap=summarydir + "{combined}_commonpeaks.bed"
+		overlap=combineddir + "{combined}_commonpeaks.bed"
 	output:
-		gzipped=temp(summarydir + "{combined}-peaks-matrix.mat.gz")
+		gzipped=temp(combineddir + "{combined}-peaks-matrix.mat.gz")
 	shell:
 		"computeMatrix scale-regions "
 		"-S {input.bwfiles} -R {input.overlap} "
@@ -314,9 +315,9 @@ rule plotheatmapbysample:
 # create heatmap for scores associated with common peaks (by sample)
 # for quality check --- see consistency of peak profiles
 	input:
-		summarydir + "{combined}-peaks-matrix.mat.gz"
+		combineddir + "{combined}-peaks-matrix.mat.gz"
 	output:
-		summarydir + "{combined}-peaks-matrix-heatmap.png"
+		combineddir + "{combined}-peaks-matrix-heatmap.png"
 	shell:
 		"plotHeatmap -m {input} -out {output} "
 		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "
@@ -334,7 +335,7 @@ rule compilepeakunion:
 # get the union of peaks between all samples
 # note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
-		map(lambda x: summarydir + x + "_commonpeaks.bed", config["combined"])
+		map(lambda x: combineddir + x + "_commonpeaks.bed", config["combined"])
 	output:
 		summarydir + "summary-unionpeaks.bed"
 	shell:
@@ -351,8 +352,8 @@ rule multibigwigsummary:
 	output:
 		npzbins=summarydir + "summarybw-bins.npz",
 		tabbins=summarydir + "summarybw-bins.tab",
-		npzpeak=summarydir + "summarybw-peaks.npz",
-		tabpeak=summarydir + "summarybw-peaks.tab"
+		npzpeak=summarydir + "summarybw-peak.npz", 
+		tabpeak=summarydir + "summarybw-peak.tab"
 	shell:
 		"multiBigwigSummary bins -b {input.bwfiles} -o {output.npzbins} "
 		"--outRawCounts {output.tabbins}; "
@@ -363,7 +364,7 @@ rule pcacorr:
 # plot PCA and correlation plots for replicates of ALL samples
 	input:
 		npzbins=summarydir + "summarybw-bins.npz",
-		npzpeak=summarydir + "summarybw-peaks.npz"
+		npzpeak=summarydir + "summarybw-peak.npz"
 	output:
 		pcabins=summarydir + "summarybw-bins-pca.png",
 		corrbins=[summarydir + "summarybw-bins-corr-heatmap" + f for f in [".png", ".tab"]],
