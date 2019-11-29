@@ -37,6 +37,8 @@ combined:
 # an exception can be made for sampledir,
 # as these (large) files might be somewhere else 
 # in this case, use an absolute dir (e.g. /path/to/raw/FASTQ/)
+#
+# IMPORTANT: make sure directories end with a forward slash /
 ######################################################################
 
 # location of raw fastq files
