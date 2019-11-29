@@ -21,6 +21,27 @@ To generate the DAG diagram:
 snakemake --dag --forceall | dot -Tsvg > dag.svg
 ```
 
+## creating environment file
+Based on: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+
+Create environment based on the yml file:
+
+```
+# first line of yml file sets env name (assumed to be myenv here)
+conda env create -f environment.yml
+
+conda activate myenv
+conda env list  # to verify
+conda info --envs
+```
+
+To export my current environment:
+```
+conda env export > environment.yml
+```
+
+MACS2 might need a Python2 environment: https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html
+
 ## Quirks I noticed about Snakemake
 ### Why are my variables not recognised??!!
 Here is a (relatively) minimal example of a Snakemake file, representative of my workflow/logic.
