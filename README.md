@@ -64,15 +64,17 @@ snakemake --cores 8 --restart-times 1 \
   --mail-user {cluster.mailuser} --mail-type {cluster.mailtype}"
 ```
 
-### Disclaimer about package specific bugs
-#### MACS2 (and why this repo does not work out of the box)
+## Known bugs 
+*Disclaimer: there are some known bugs with the packages, which is independent from this Snakemake pipeline. Please report them to the developers of said packages. I do not have the time or capability to fix them myself.*
+
+### MACS2 (and why this repo does not work out of the box)
 There is a weird bug in the peak caller MACS2 which causes it to crash if the sample BAM files contains no peaks in it. This is documented [here](https://github.com/taoliu/MACS/issues/108), and is beyond my capability to fix, especially in the context of a Conda environment.
 
 For most intents and purposes, this error rarely comes up in real data. If the pipeline crashes at the MACS2 step and throws this error, you should interpret this as the absence of peaks (and move along...).
 
 This is indeed the case for the sample data in this repo, but running things as a dry run `-n` should still work.
 
-#### IDR
+### IDR
 IDR does not work if there are fewer than 20 common peaks between replicates.
 
 ## Optional reading (mostly for my records)
@@ -159,10 +161,10 @@ Having `print(config)` in the Snakefile returns a dictionary of variables:
 {'samples': {'A': ['A_1.txt', 'A_2.txt'], 'B': ['B_1.txt', 'B_2.txt', 'B_3.txt'],}, 'indir': 'input/', 'outdir': 'output/'}
 ```
 
-##### {sample}
+#### {sample}
 `{sample}` that outside the rule `all` are unusual. Intuitively, one might expect is that it's the keys in `config["samples]` dictionary, but it is NOT. Rather, it is a **wildcard** that Snakemake attempts to match from the output file specified. It seems to be equivalent to `wildcards.sample` when used in a shell directive.
 
-##### a list of lists
+#### a list of lists
 `lambda x: map(lambda y: indir + y, config["samples"][x.sample])` is ugly, but what it's 
 
 `config["samples] = {'A': ['A_1.txt', 'A_2.txt'], 'B': ['B_1.txt', 'B_2.txt', 'B_3.txt'],}`
