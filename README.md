@@ -33,6 +33,7 @@ conda env create -f environment.yml
 conda activate myenv
 conda env list  # to verify
 conda info --envs
+conda remove --name myenv --all
 ```
 
 To export my current environment:
@@ -41,6 +42,8 @@ conda env export > environment.yml
 ```
 
 MACS2 might need a Python2 environment: https://snakemake.readthedocs.io/en/stable/tutorial/additional_features.html
+
+To do this: https://github.com/taoliu/MACS/wiki/Call-differential-binding-events
 
 ## Quirks I noticed about Snakemake
 ### Why are my variables not recognised??!!
@@ -157,3 +160,5 @@ Force a specific step to run, you can add ``--reason`` to know why Snakemake cho
 ```
 snakemake --forcerun samtools_sort
 ```
+
+tab in conda directive
