@@ -87,8 +87,7 @@ rule trim:
 		bin=config["trimmomatic"]["bin"],
 		settings=config["trimmomatic"]["settings"]
 	shell:
-		"java -jar {params.bin} SE "
-		"{input} {output} {params.settings} 2>{log}"
+		"trimmomatic SE {input} {output} {params.settings} 2>{log}"
 
 rule decompress:
 # unzip fastq.gz for BWA
