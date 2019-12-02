@@ -26,6 +26,10 @@ combined:
     - ANT1_S3
     - BOY6_S9
 
+# reference genome 
+refgenome: data/genome.fa
+refchromsizes: data/genome.chrom-sizes
+
 
 ######################################################################
 ######################################################################
@@ -63,10 +67,6 @@ subdir:
 ######################################################################
 #     Settings for packages
 ######################################################################
-
-# reference genome 
-refgenome: data/genome.fa
-refchromsizes: data/genome.chrom-sizes
 
 # settings for trimmomatic
 # there should be a space after each line of settings
