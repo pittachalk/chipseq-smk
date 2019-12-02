@@ -167,7 +167,8 @@ rule samtools:
 ######################################################################
 
 rule macs2:
-# call peaks with MACS2 
+# call peaks with MACS2 2.1.2
+# this needs to be run in a Python 2 environment
 	input:
 		sample = bamdir + "{id}_sorted.bam",
 		control = lambda x: bamdir + config["ids"][x.id] + "_sorted.bam"
@@ -178,6 +179,8 @@ rule macs2:
 		logdir + "macs2/{id}.log"
 	params:
 		settings=config["macs2"]["settings"]
+	conda:
+        "envs/py2.yaml"
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
 		"--name {wildcards.id} --outdir " + macs2dir + " "

@@ -2,14 +2,14 @@
 
 ## TLDR: one line command that should work
 ```
-mkdir slurm/; snakemake
+mkdir slurm/; snakemake --use-conda
 ```
 
 If you're on a SLURM cluster, you can use this to make use of multiple cores:
 ```
 mkdir slurm/
 snakemake --cores 8 --restart-times 1 \
-  --printshellcmds --keep-going \
+  --printshellcmds --keep-going --use-conda \
   --cluster-config ./cluster.json --cluster \
   "sbatch -J {cluster.jobname} -o {cluster.output} \
   -c {cluster.cores} -N {cluster.nodes} -p {cluster.partition} \
