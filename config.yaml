@@ -30,6 +30,9 @@ combined:
 refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes
 
+# location of raw fastq files
+sampledir: data/samples/
+
 
 ######################################################################
 ######################################################################
@@ -44,9 +47,6 @@ refchromsizes: data/genome.chrom-sizes
 #
 # IMPORTANT: make sure directories end with a forward slash /
 ######################################################################
-
-# location of raw fastq files
-sampledir: data/samples/
 
 # location for output files of Snakemake pipeline
 outputdir: output/
@@ -72,8 +72,8 @@ subdir:
 # there should be a space after each line of settings
 trimmomatic:
   settings:
-    ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq3-SE.fa:2:30:10 
-    ILLUMINACLIP:/mnt/home1/miska/jlp76/programs/Trimmomatic-0.39/adapters/TruSeq2-SE.fa:2:30:10 
+    ILLUMINACLIP:adapter/TruSeq3-SE.fa:2:30:10 
+    ILLUMINACLIP:adapter/TruSeq2-SE.fa:2:30:10 
     SLIDINGWINDOW:4:28 MINLEN:20
 
 # settings for MACS2
