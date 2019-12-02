@@ -179,7 +179,7 @@ rule macs2:
 	params:
 		settings=config["macs2"]["settings"]
 	conda:
-        "envs/py2.yaml"
+		"envs/py2.yml"
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
 		"--name {wildcards.id} --outdir " + macs2dir + " "
@@ -187,12 +187,15 @@ rule macs2:
 
 rule bedgraph:
 # prepare bedgraph of linear fold enrichment and log10 likelihood
+# this needs to be run in a Python 2 environment
 	input: 
 		sample = macs2dir + "{id}_treat_pileup.bdg",
 		control = macs2dir + "{id}_control_lambda.bdg"
 	output:
 		FE = macs2dir + "{id}_linearFE.bdg",
 		logLR = macs2dir + "{id}_logLR.bdg"
+	conda:
+		"envs/py2.yml"
 	shell:
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.FE} -m FE; "
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.logLR} -m logLR --pseudocount 0.00001"
