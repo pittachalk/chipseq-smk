@@ -84,7 +84,6 @@ rule trim:
 	log:
 		logdir + "trimmomatic/{sample}.log"
 	params:
-		bin=config["trimmomatic"]["bin"],
 		settings=config["trimmomatic"]["settings"]
 	shell:
 		"trimmomatic SE {input} {output} {params.settings} 2>{log}"
@@ -212,11 +211,9 @@ rule igvsort:
 	output: 
 		FE = tempdir + "{id}_linearFE_sorted.bdg",  # temp this later on!
 		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
-	params:
-		bin=config["igvtools"]["bin"]
 	shell:
-		"{params.bin} sort {input.FE} {output.FE}; "
-		"{params.bin} sort {input.logLR} {output.logLR}"
+		"igvtools sort {input.FE} {output.FE}; "
+		"igvtools sort {input.logLR} {output.logLR}"
 
 rule igvtotdf:
 # convert bedgraph to TDF for IGV
@@ -227,11 +224,10 @@ rule igvtotdf:
 		FE = macs2dir + "{id}_linearFE_sorted.tdf",
 		logLR = macs2dir + "{id}_logLR_sorted.tdf"
 	params:
-		bin=config["igvtools"]["bin"],
 		ref=config["refgenome"]
 	shell:
-		"{params.bin} toTDF {input.FE} {output.FE} {params.ref}; "
-		"{params.bin} toTDF {input.logLR} {output.logLR} {params.ref}"
+		"igvtools toTDF {input.FE} {output.FE} {params.ref}; "
+		"igvtools toTDF {input.logLR} {output.logLR} {params.ref}"
 
 rule bedgraphtobigwig:
 # convert bedgraph to bigwig for deeptools
