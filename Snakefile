@@ -212,7 +212,7 @@ rule igvsort:
 		FE = macs2dir + "{id}_linearFE.bdg",
 		logLR = macs2dir + "{id}_logLR.bdg"
 	output: 
-		FE = tempdir + "{id}_linearFE_sorted.bdg",  # temp this later on!
+		FE = temp(tempdir + "{id}_linearFE_sorted.bdg"),  # temp this later on!
 		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
 	shell:
 		"igvtools sort {input.FE} {output.FE}; "
