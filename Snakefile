@@ -440,5 +440,5 @@ rule testingrcode:
 		"testRdata.txt"
 	output:
 		"testRoutput.pdf"
-	shell:
-		"Rscript script/testRscript.R {input} {output}"
+	script:
+		"script/testRscript.R"
