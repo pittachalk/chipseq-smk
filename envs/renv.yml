@@ -1,0 +1,8 @@
+name: renv
+channels:
+ - conda-forge
+dependencies:
+ - r=3.6
+ - r-ggplot2=3.1
+ - r-dplyr=0.8
+ - r-readr=1.3

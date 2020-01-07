@@ -30,12 +30,13 @@ Note that the user can comment out what is not required
 
 rule all:
 	input:
-		# alignment files for individuals:
-		# sorted BAM files and quality control reports
-	    expand(["{outputdir}{bamdir}{sample}_sorted.bam",
-	    		"{outputdir}{qc}{sample}_fastqc.html"], 
-	    	sample=config["samples"], outputdir=config["outputdir"], 
-	    	bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
+		"testRoutput.pdf"
+		## alignment files for individuals:
+		## sorted BAM files and quality control reports
+	    #expand(["{outputdir}{bamdir}{sample}_sorted.bam",
+	    #		"{outputdir}{qc}{sample}_fastqc.html"], 
+	    #	sample=config["samples"], outputdir=config["outputdir"], 
+	    #	bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
 
 	    ## MACS2 output for individuals: BED files for peaks, binary TDF for IGV
 	    #expand(["{outputdir}{macs2}{id}_peaks.narrowPeak",
@@ -60,7 +61,7 @@ rule all:
 		#	outputdir=config["outputdir"],
 		#	macs2=config["subdir"]["macs2"], summarydir=config["subdir"]["summary"] )
 
-	    "testRoutput.pdf"
+	    
 
 ######################################################################
 ######################################################################
@@ -440,5 +441,9 @@ rule testingrcode:
 		"testRdata.txt"
 	output:
 		"testRoutput.pdf"
+	conda:
+		"envs/renv.yml"
+	params:
+		color="red"
 	script:
-		"script/testRscript.R"
+		"testRscript.R"
