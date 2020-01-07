@@ -17,7 +17,7 @@ rule macs2:
 	params:
 		settings=config["macs2"]["settings"]
 	conda:
-		"envs/py2.yml"
+		"../envs/macs.yml"
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
 		"--name {wildcards.id} --outdir " + macs2dir + " "
@@ -33,7 +33,7 @@ rule bedgraph:
 		FE = macs2dir + "{id}_linearFE.bdg",
 		logLR = macs2dir + "{id}_logLR.bdg"
 	conda:
-		"envs/py2.yml"
+		"../envs/macs.yml"
 	shell:
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.FE} -m FE; "
 		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.logLR} -m logLR --pseudocount 0.00001"

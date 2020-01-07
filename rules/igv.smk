@@ -11,6 +11,8 @@ rule igvsort:
 	output: 
 		FE = temp(tempdir + "{id}_linearFE_sorted.bdg"),  # temp this later on!
 		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"igvtools sort {input.FE} {output.FE}; "
 		"igvtools sort {input.logLR} {output.logLR}"
@@ -25,6 +27,8 @@ rule igvtotdf:
 		logLR = macs2dir + "{id}_logLR_sorted.tdf"
 	params:
 		ref=config["refgenome"]
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"igvtools toTDF {input.FE} {output.FE} {params.ref}; "
 		"igvtools toTDF {input.logLR} {output.logLR} {params.ref}"
@@ -38,6 +42,8 @@ rule bedgraphtobigwig:
 		macs2dir + "{id}_linearFE.bw"
 	params:
 		ref=config["refchromsizes"]
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"
 
@@ -48,6 +54,8 @@ rule bigwigmerge:
 		lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined])
 	output:
 		temp(tempdir + "{combined}_combined.bedGraph")
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bigWigMerge {input} {output}"
 
@@ -60,5 +68,7 @@ rule converttomultibigwig:
 		combineddir + "{combined}_combined.bw"
 	params:		
 		ref=config["refchromsizes"]
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"

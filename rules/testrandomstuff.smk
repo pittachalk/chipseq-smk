@@ -10,7 +10,7 @@ rule testingrcode:
 	output:
 		"testRoutput.pdf"
 	conda:
-		"envs/renv.yml"
+		"../envs/renv.yml"
 	params:
 		color="red"
 	script:

@@ -10,6 +10,8 @@ rule getcommonpeaks:
 	output:
 		a=temp(combineddir + "{combined}_commonpeaks1.bed"),
 		b=temp(combineddir + "{combined}_commonpeaks2.bed")
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bedtools intersect -a {input[0]} -b {input[1]} -wa > {output.a}; "
 		"bedtools intersect -a {input[1]} -b {input[0]} -wa > {output.b}"
@@ -22,6 +24,8 @@ rule extendcommonpeaks:
 		b=combineddir + "{combined}_commonpeaks2.bed"
 	output:
 		combineddir + "{combined}_commonpeaks.bed"
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"cat {input} | bedtools sort | "
 		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,count | "
@@ -37,6 +41,8 @@ rule idr:
 		combineddir + "{combined}_idrValues.txt"
 	log:
 		logdir + "idr/{combined}.log"
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"idr --samples {input.peakfiles} "
 		"--output-file {output} "
@@ -49,6 +55,8 @@ rule computematrixbysample:
 		overlap=combineddir + "{combined}_commonpeaks.bed"
 	output:
 		gzipped=temp(combineddir + "{combined}-peaks-matrix.mat.gz")
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"computeMatrix scale-regions "
 		"-S {input.bwfiles} -R {input.overlap} "
@@ -63,6 +71,8 @@ rule plotheatmapbysample:
 		combineddir + "{combined}-peaks-matrix.mat.gz"
 	output:
 		combineddir + "{combined}-peaks-matrix-heatmap.png"
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"plotHeatmap -m {input} -out {output} "
 		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "

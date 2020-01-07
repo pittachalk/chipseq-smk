@@ -15,6 +15,8 @@ rule bwa_map:
 	threads: 8
 	params:
 		ref=config["refgenome"]
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bwa aln -t {threads} {params.ref} {input} 2>{log} >{output} "
 
@@ -30,6 +32,8 @@ rule bwa_samse:
 		logdir + "bwa_samse/{sample}.log"
 	params:
 		ref=config["refgenome"]
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"bwa samse -n 50 {params.ref} {input} 2>{log} >{output}"
 
@@ -41,6 +45,8 @@ rule samtools:
 		flagstat = qcdir + "{sample}_alignstat.txt",
 		sortedbam = bamdir + "{sample}_sorted.bam",
 		bai = bamdir + "{sample}_sorted.bam.bai"
+	conda:
+		"../envs/py3.yml"
 	shell:
 		"samtools flagstat {input} > {output.flagstat}; "
 		"samtools view -bS {input} | "
