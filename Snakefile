@@ -18,6 +18,14 @@ macs2dir    = outputdir + config["subdir"]["macs2"]
 summarydir  = macs2dir + config["subdir"]["summary"]  # subdir for all samples
 combineddir = macs2dir + config["subdir"]["combined"] # subdir for combined replicates
 
+import pandas as pd
+
+fastq_info = pd.read_csv("info-fastq.csv")
+fastq_info["rep"] = fastq_info["rep"].astype(str)
+fastq_info = fastq_info.set_index(["name", "rep", "lane"], drop=False)
+
+control_info  = pd.read_csv("info-control.csv").set_index("species", drop=False)
+
 ######################################################################
 ######################################################################
 #     The rule all
@@ -30,42 +38,150 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        "testRoutput.pdf",
-        
-        # alignment files for individuals:
-        # sorted BAM files and quality control reports
-        expand(["{outputdir}{bamdir}{sample}_sorted.bam",
-                "{outputdir}{qc}{sample}_fastqc.html"], 
-            sample=config["samples"], outputdir=config["outputdir"], 
-            bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
+        "testRoutput.pdf", 
+        "test/SING-rep1.bam", 
+        "test/SING-rep1-L1.fq.gz",
+        "test/SING-rep2.bam", 
+        "test/SING_IN-rep1.bam",  
+        "test/SING_IN-rep2.bam"
 
-        # MACS2 output for individuals: BED files for peaks, binary TDF for IGV
-        expand(["{outputdir}{macs2}{id}_peaks.narrowPeak",
-                "{outputdir}{macs2}{id}_linearFE_sorted.tdf", 
-                "{outputdir}{macs2}{id}_logLR_sorted.tdf"],
-            outputdir=config["outputdir"], id=config["ids"], macs2=config["subdir"]["macs2"]),
+        #expand("testing/{species}_commonpeaks", species = control_info["species"].unique())
+        #expand("testing/{id.species}_commonpeaks", id = control_info.itertuples())
 
-        # combined output from pairs of replicates:
-        # common peaks BED, IDR values, heatmap of peak profiles
-        expand(["{outputdir}{macs2}{combineddir}{combined}_commonpeaks.bed",
-                "{outputdir}{macs2}{combineddir}{combined}_idrValues.txt",
-                "{outputdir}{macs2}{combineddir}{combined}-peaks-matrix-heatmap.png"],
-            outputdir=config["outputdir"], macs2=config["subdir"]["macs2"], 
-            combineddir=config["subdir"]["combined"], combined=config["combined"] ),
+        ## alignment files for individuals:
+        ## sorted BAM files and quality control reports
+        #expand(["{outputdir}{bamdir}{sample}_sorted.bam",
+        #        "{outputdir}{qc}{sample}_fastqc.html"], 
+        #    sample=config["samples"], outputdir=config["outputdir"], 
+        #    bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
+#
+        ## MACS2 output for individuals: BED files for peaks, binary TDF for IGV
+        #expand(["{outputdir}{macs2}{id}_peaks.narrowPeak",
+        #        "{outputdir}{macs2}{id}_linearFE_sorted.tdf", 
+        #        "{outputdir}{macs2}{id}_logLR_sorted.tdf"],
+        #    outputdir=config["outputdir"], id=config["ids"], macs2=config["subdir"]["macs2"]),
+#
+        ## combined output from pairs of replicates:
+        ## common peaks BED, IDR values, heatmap of peak profiles
+        #expand(["{outputdir}{macs2}{combineddir}{combined}_commonpeaks.bed",
+        #        "{outputdir}{macs2}{combineddir}{combined}_idrValues.txt",
+        #        "{outputdir}{macs2}{combineddir}{combined}-peaks-matrix-heatmap.png"],
+        #    outputdir=config["outputdir"], macs2=config["subdir"]["macs2"], 
+        #    combineddir=config["subdir"]["combined"], combined=config["combined"] ),
+#
+        ## summary files for everything:
+        ## union of all peaks BED, PCA, correlation and heatmap of peak profiles
+        #expand(["{outputdir}{macs2}{summarydir}summary-unionpeaks.bed",
+        #        "{outputdir}{macs2}{summarydir}summarybw-peak-pca.png",
+        #        "{outputdir}{macs2}{summarydir}summarybw-peak-corr-heatmap.png",
+        #        "{outputdir}{macs2}{summarydir}summarybw-peaks-matrix-heatmap.png"],
+        #    outputdir=config["outputdir"],
+        #    macs2=config["subdir"]["macs2"], summarydir=config["subdir"]["summary"] )
 
-        # summary files for everything:
-        # union of all peaks BED, PCA, correlation and heatmap of peak profiles
-        expand(["{outputdir}{macs2}{summarydir}summary-unionpeaks.bed",
-                "{outputdir}{macs2}{summarydir}summarybw-peak-pca.png",
-                "{outputdir}{macs2}{summarydir}summarybw-peak-corr-heatmap.png",
-                "{outputdir}{macs2}{summarydir}summarybw-peaks-matrix-heatmap.png"],
-            outputdir=config["outputdir"],
-            macs2=config["subdir"]["macs2"], summarydir=config["subdir"]["summary"] )
+#include: "rules/preprocessing.smk"
+#include: "rules/align.smk"
+#include: "rules/callpeak.smk"
+#include: "rules/igv.smk"
+#include: "rules/comparepairs.smk"
+#include: "rules/summarize.smk"
+#include: "rules/testrandomstuff.smk"
 
-include: "rules/preprocessing.smk"
-include: "rules/align.smk"
-include: "rules/callpeak.smk"
-include: "rules/igv.smk"
-include: "rules/comparepairs.smk"
-include: "rules/summarize.smk"
-include: "rules/testrandomstuff.smk"
+
+def is_single_end(name, replic, lane):
+    """
+    Check if there is a second fastq file for the given sample.
+    """
+    return pd.isnull(fastq_info.loc[(name, replic, lane), "fq2"])
+
+def get_fq_se(wildcards):
+    if(is_single_end(wildcards.name, wildcards.replic, wildcards.lane)):
+        return "data/samples/" + fastq_info.loc[(wildcards.name, wildcards.replic, wildcards.lane), "fq1"]
+    else:
+        raise ValueError("This is a paired-end sample")
+
+def get_fq_pe(wildcards):
+    if(is_single_end(wildcards.name, wildcards.replic, wildcards.lane)):
+        raise ValueError("This is a single-end sample")
+    else:
+        return "data/samples/" + fastq_info.loc[(wildcards.name, wildcards.replic, wildcards.lane), ["fq1", "fq2"]]
+
+rule proto_trimSE:
+    # output: {name}-{replicate}-{lane}.txt   
+    input:
+        get_fq_se
+    output:
+        fq = "test/{name}-rep{replic}-{lane}.fq.gz"
+	#log:
+	#	logdir + "test/trimPE/{name}-rep{replic}-{lane}.log"
+	#params:
+	#	settings=config["trimmomatic"]["settings"]
+    shell:
+        "cat {input} > {output}"
+		#"trimmomatic PE {input} {output} {params.settings} 2>{log}"
+
+rule proto_trimPE:
+    # output: {name}-{replicate}-{lane}.1.txt, {name}-{replicate}-{lane}.2.txt
+    input:
+        get_fq_pe
+    output:
+        fq1 = "test/{name}-rep{replic}-{lane}.1.fq.gz",
+        fq2 = "test/{name}-rep{replic}-{lane}.2.fq.gz"
+	#log:
+    #	logdir + "test/trimPE/{name}-{replic}-{lane}.log"
+	#params:
+	#	settings=config["trimmomatic"]["settings"]
+    shell:
+        "cat {input} > {output}"
+		#"trimmomatic PE {input} {output} {params.settings} 2>{log}"
+    
+
+#def get_trimmed_fq(wildcards):
+#    if is_single_end(wildcards.name, wildcards.replic, wildcards.lane):
+#        return "test/{name}-rep{replic}-{lane}.fq.gz".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
+#    else:
+#        return expand("test/{name}-rep{replic}-{lane}.{pair}.fq.gz", name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
+
+
+#rule proto_catlanes:
+    # output: {name}-{replicate}.1.txt, {name}-{replicate}.2.txt
+    # output: {name}-{replicate}.txt'
+    # NOT SURE if necessary (maybe needed for QC)
+    #input: 
+
+
+rule proto_bwa:
+    # this is the step where paired end reads are combined
+    # will need a separate one for single end
+    # output: {name}.{replicate}-aligned.txt
+    input:
+        fq = get_trimmed_fq
+    output:
+        "test/{name}-rep{replic}.bam"
+    shell:
+        "cat {input} > {output}"
+
+
+#def get_treatvscontrol_bam(wildcards):
+#    if is_single_end(wildcards.name, wildcards.replic):
+#        return "test/{name}-rep{replic}.bam".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
+#    else:
+#        return expand("test/{name}-rep{replic}.bam", 
+#            name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane. pair = [1, 2])
+#
+#
+#rule proto_vsinput:
+#    # compare vs input
+#    # output: {name}-controlled.txt
+#    input:
+#        treat = "fdf{fdf}"",
+#        control =  
+#
+#rule proto_combinereplicate:
+#    # for simplicity, we assume that there MUST be replicates for samples
+#    # equivalent to calling common peaks
+#    # output: {name}-commonpeaks.txt
+#    input:
+#        replicates = 
+
+
+
