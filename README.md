@@ -64,6 +64,11 @@ snakemake --cores 8 --restart-times 1 \
   --mail-user {cluster.mailuser} --mail-type {cluster.mailtype}"
 ```
 
+UPDATE: install a SLURM profile via this [link](https://github.com/Snakemake-Profiles/slurm). Then could potentially run as. At the moment, I can't get it to work, but I will revisit this.
+```
+snakemake --profile slurm --cores 8 -npr --use-conda 
+```
+
 ## Known bugs 
 *Disclaimer: there are some known bugs with the packages, which is independent from this Snakemake pipeline. Please report them to the developers of said packages. I do not have the time or capability to fix them myself.*
 
