@@ -1,4 +1,7 @@
-species,treatment,control
-chickenSE,SING,SING_IN
-humanPE,PAIR_A,PAIR_IN
-mousePE,PAIR_B,PAIR_IN
+species,treat_name,treat_rep,control_name,control_rep
+chicken,SING,1,SING_IN,1
+chicken,SING,2,SING_IN,2
+human,PAIR_A,1,PAIR_IN,1
+human,PAIR_A,2,PAIR_IN,2
+mouse,PAIR_B,1,PAIR_IN,1
+mouse,PAIR_B,2,PAIR_IN,2

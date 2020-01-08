@@ -1,4 +1,4 @@
 species,treatment,control
-chickenSE,SING,SING_IN
-humanPE,PAIR_A,PAIR_IN
-mousePE,PAIR_B,PAIR_IN
+chicken,SING,SING_IN
+human,PAIR_A,PAIR_IN
+mouse,PAIR_B,PAIR_IN
