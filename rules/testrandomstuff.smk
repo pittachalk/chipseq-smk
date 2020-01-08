@@ -14,4 +14,4 @@ rule testingrcode:
 	params:
 		color="red"
 	script:
-		"testRscript.R"
+		"../testRscript.R"
