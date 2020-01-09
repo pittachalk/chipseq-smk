@@ -19,6 +19,7 @@ summarydir  = macs2dir + config["subdir"]["summary"]  # subdir for all samples
 combineddir = macs2dir + config["subdir"]["combined"] # subdir for combined replicates
 
 import pandas as pd
+import itertools
 
 fastq_info = pd.read_csv("info-fastq.csv")
 fastq_info["rep"] = fastq_info["rep"].astype(str)
@@ -208,8 +209,7 @@ def are_there_replicates(id):
     # check if there are replicates for a given id
     return (len(control_info.loc[id]) > 1)
 
-#def get_replicate_pairs(wildcards):
-    # returns all pairwise combinations of replicates for a given id, if those exist
+
 
 def get_replicate_list(wildcards):
     # returns a list of of replicates for a given id, if those exist
@@ -218,8 +218,7 @@ def get_replicate_list(wildcards):
     else:
         raise ValueError("There are no replicates for this ID.")
 
-
-rule proto_combinereplicates:
+rule proto_combineallreplicates:
     # equivalent to calling common peaks
     # output: {name}-commonpeaks.txt
     input:
@@ -228,3 +227,31 @@ rule proto_combinereplicates:
         "test/{id}.commonpeaks.bed"
     shell:
         "cat a {input.replicates[0]} b {input.replicates[1]} > {output}"
+
+
+
+
+def get_replicate_pairs(wildcards):
+    # returns all pairwise combinations of replicates for a given id, if those exist
+    # returns all pairwise combinations of replicates for a given id, if those exist
+    # THIS NEEDS TO BE IN A SEPARATE FUNCTION
+    # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
+    if(are_there_replicates(wildcards.id)):
+        replicate_list = control_info.loc[wildcards.id]["idrep"]
+        pairs = itertools.combinations(replicate_list, 2)
+        return expand("test/{id}-{x[0]}.narrowPeak test/{id}-{x[1]}.narrowPeak", id = wildcards.id, x = pairs)
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+rule proto_comparereplicatecombinations:
+    # equivalent to calling common peaks
+    # probably need a separate script for this
+    # output: {name}-commonpeaks.txt
+    # THIS NEEDS TO BE IN A SEPARATE FUNCTION
+    # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
+    input:
+        pairs = get_replicate_pairs
+    output:
+        "test/{id}.pairs.bed"
+    shell:
+        "cat {input.pairs} > {output}"
