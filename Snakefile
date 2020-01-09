@@ -24,7 +24,13 @@ fastq_info = pd.read_csv("info-fastq.csv")
 fastq_info["rep"] = fastq_info["rep"].astype(str)
 fastq_info = fastq_info.set_index(["name", "rep", "lane"], drop=False)
 
-control_info  = pd.read_csv("info-control.csv").set_index("species", drop=False)
+control_info = pd.read_csv("info-control.csv")
+control_info["idrep"]      = control_info["idrep"].astype(str)
+control_info["treatrep"]   = control_info["treatrep"].astype(str)
+control_info["controlrep"] = control_info["controlrep"].astype(str)
+
+control_info = control_info.set_index(["id", "idrep"], drop=False)
+#control_info = control_info.set_index("species", drop=False)
 
 ######################################################################
 ######################################################################
@@ -38,15 +44,9 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        "testRoutput.pdf", 
-        "test/SING-rep1.bam", 
-        "test/SING-rep1-L1.fq.gz",
-        "test/SING-rep2.bam", 
-        "test/SING_IN-rep1.bam",  
-        "test/SING_IN-rep2.bam"
+        expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique())
 
-        #expand("testing/{species}_commonpeaks", species = control_info["species"].unique())
-        #expand("testing/{id.species}_commonpeaks", id = control_info.itertuples())
+        #"testRoutput.pdf"
 
         ## alignment files for individuals:
         ## sorted BAM files and quality control reports
@@ -135,53 +135,96 @@ rule proto_trimPE:
 		#"trimmomatic PE {input} {output} {params.settings} 2>{log}"
     
 
-#def get_trimmed_fq(wildcards):
-#    if is_single_end(wildcards.name, wildcards.replic, wildcards.lane):
-#        return "test/{name}-rep{replic}-{lane}.fq.gz".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
-#    else:
-#        return expand("test/{name}-rep{replic}-{lane}.{pair}.fq.gz", name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
-
-
 #rule proto_catlanes:
     # output: {name}-{replicate}.1.txt, {name}-{replicate}.2.txt
     # output: {name}-{replicate}.txt'
     # NOT SURE if necessary (maybe needed for QC)
     #input: 
 
+def get_trimmed_fq(wildcards):
+    if is_single_end(wildcards.name, wildcards.replic, wildcards.lane):
+        return "test/{name}-rep{replic}-{lane}.fq.gz".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
+    else:
+        return expand("test/{name}-rep{replic}-{lane}.{pair}.fq.gz", 
+        name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
 
 rule proto_bwa:
+    # bwa is run on each lane separately
     # this is the step where paired end reads are combined
-    # will need a separate one for single end
-    # output: {name}.{replicate}-aligned.txt
     input:
         fq = get_trimmed_fq
     output:
-        "test/{name}-rep{replic}.bam"
+        "test/{name}-rep{replic}-{lane}.bam"
     shell:
         "cat {input} > {output}"
 
 
-#def get_treatvscontrol_bam(wildcards):
-#    if is_single_end(wildcards.name, wildcards.replic):
-#        return "test/{name}-rep{replic}.bam".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
-#    else:
-#        return expand("test/{name}-rep{replic}.bam", 
-#            name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane. pair = [1, 2])
-#
-#
-#rule proto_vsinput:
-#    # compare vs input
-#    # output: {name}-controlled.txt
-#    input:
-#        treat = "fdf{fdf}"",
-#        control =  
-#
-#rule proto_combinereplicate:
-#    # for simplicity, we assume that there MUST be replicates for samples
-#    # equivalent to calling common peaks
-#    # output: {name}-commonpeaks.txt
-#    input:
-#        replicates = 
+# def get_bam_units(wildcards):
+#     # return "mapped/{name}-*.bam".format(name = wildcards.name)
+#     units = unit_info[unit_info["name"] == wildcards.name]["unit"]
+#     return expand("mapped/{name}-{unit}.bam", name = wildcards.name, unit = units)
+
+
+def get_bam_lanes(wildcards):
+    lanes   = fastq_info[(fastq_info["name"] == wildcards.name) &  (fastq_info["rep"] == wildcards.replic)]["lane"]
+    return expand("test/{name}-rep{replic}-{lane}.bam", name = wildcards.name, replic = wildcards.replic, lane = lanes)
+
+rule proto_cat_bam:
+   # now we cat the bam files from separate lanes
+   # this will be replaced with conversion to sam, so the cat is just placeholder
+   # output: {name}.{replicate}-aligned.txt
+   input:
+       fq = get_bam_lanes
+   output:
+       "test/{name}-rep{replic}.merged.bam"
+   shell:
+       "cat {input} > {output}"
+
+def get_treatvscontrol_bam(wildcards):
+    # this should give a single row describing the treatment vs control pairing
+    x = control_info[(control_info["id"] == wildcards.id) & (control_info["idrep"] == wildcards.idrep)]
+
+    treat = expand("test/{treatname}-rep{treatrep}.merged.bam", treatname = x["treatname"], treatrep = x["treatrep"])
+    control = expand("test/{controlname}-rep{controlrep}.merged.bam", controlname = x["controlname"], controlrep = x["controlrep"])
+    
+    assert (len(treat) == 1), "treated list not length 1, are id-idrep pairs unique?"
+    assert (len(control) == 1), "control list not length 1, are id-idrep pairs unique?"
+
+    return (treat[0], control[0])
+
+rule proto_vsinput:
+    # compare vs input
+    # output: {name}-controlled.txt
+    input:
+        bam = get_treatvscontrol_bam
+    output:
+        "test/{id}-{idrep}.narrowPeak"
+    shell:
+        "cat t {input.bam[0]} c {input.bam[1]} > {output}"
 
 
 
+def are_there_replicates(id):
+    # check if there are replicates for a given id
+    return (len(control_info.loc[id]) > 1)
+
+#def get_replicate_pairs(wildcards):
+    # returns all pairwise combinations of replicates for a given id, if those exist
+
+def get_replicate_list(wildcards):
+    # returns a list of of replicates for a given id, if those exist
+    if(are_there_replicates(wildcards.id)):
+        return expand("test/{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+
+rule proto_combinereplicates:
+    # equivalent to calling common peaks
+    # output: {name}-commonpeaks.txt
+    input:
+        replicates = get_replicate_list
+    output:
+        "test/{id}.commonpeaks.bed"
+    shell:
+        "cat a {input.replicates[0]} b {input.replicates[1]} > {output}"
