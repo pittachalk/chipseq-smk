@@ -213,6 +213,9 @@ def are_there_replicates(id):
 
 def get_replicate_list(wildcards):
     # returns a list of of replicates for a given id, if those exist
+    # CURRENTLY THIS DOESNT WORK IF THERE ARE INDEED NO REPLICATES
+    # I THINK PE AND SE WORKS BECAUSE THEY COMPLEMENT EACH OTHER
+    # this function might not even be necessary anymore, can merge with proto_combineallreplicates
     if(are_there_replicates(wildcards.id)):
         return expand("test/{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
     else:
