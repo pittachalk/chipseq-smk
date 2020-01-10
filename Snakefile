@@ -10,17 +10,20 @@ configfile: "config.yaml"  # put quotes
 
 import pandas as pd
 import itertools
+from os.path import join
 
 # obtain directories from the CONFIG file
-sampledir   = config["sampledir"]
-outputdir   = config["outputdir"]
-tempdir     = outputdir + config["subdir"]["tmp"]
-logdir      = outputdir + config["subdir"]["log"]
-qcdir       = outputdir + config["subdir"]["qc"]
-bamdir      = outputdir + config["subdir"]["bam"]
-macs2dir    = outputdir + config["subdir"]["macs2"]
-summarydir  = macs2dir + config["subdir"]["summary"]  # subdir for all samples
-combineddir = macs2dir + config["subdir"]["combined"] # subdir for combined replicates
+indir       = config["input"]
+outdir      = config["out"]
+logdir      = config["log"]
+
+# subdirectories of outdir
+trimdir     = join(outdir, "trim/", "")
+qcdir       = join(outdir, config["qc"], "")
+bamdir      = join(outdir, config["bam"], "")
+peaksdir    = join(outdir, config["peaks"], "")
+pairsdir    = join(outdir, config["pairs"], "")
+summarydir  = join(outdir, config["summary"], "")
 
 # reading CSVs about fastq file and treated-control information
 fastq_info = pd.read_csv("info-fastq.csv")
@@ -45,47 +48,40 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique())
+        # alignment files for individuals:
+        # sorted BAM files and quality control reports
+        expand(["{bamdir}{sample}_sorted.bam", "{qcdir}{sample}_fastqc.html"], 
+           sample=config["samples"], bamdir=bamdir, qcdir=qcdir),
 
+        # MACS2 output for individuals: BED files for peaks, binary TDF for IGV
+        expand(["{peaksdir}{id}_peaks.narrowPeak","{peaksdir}{id}_linearFE_sorted.tdf", 
+                "{peaksdir}{id}_logLR_sorted.tdf"], id=config["ids"], peaksdir=peaksdir),
+
+        # combined output from pairs of replicates:
+        # common peaks BED, IDR values, heatmap of peak profiles
+        expand(["{pairsdir}{combined}_commonpeaks.bed",
+               "{pairsdir}{combined}_idrValues.txt",
+               "{pairsdir}{combined}-peaks-matrix-heatmap.png"], 
+           pairsdir=pairsdir, combined=config["combined"] ),
+
+        # summary files for everything:
+        # union of all peaks BED, PCA, correlation and heatmap of peak profiles
+        expand(["{summarydir}summary-unionpeaks.bed",
+               "{summarydir}summarybw-peak-pca.png",
+               "{summarydir}summarybw-peak-corr-heatmap.png",
+               "{summarydir}summarybw-peaks-matrix-heatmap.png"],
+           summarydir=summarydir)
+
+        #expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique()),
         #"testRoutput.pdf"
 
-        ## alignment files for individuals:
-        ## sorted BAM files and quality control reports
-        #expand(["{outputdir}{bamdir}{sample}_sorted.bam",
-        #        "{outputdir}{qc}{sample}_fastqc.html"], 
-        #    sample=config["samples"], outputdir=config["outputdir"], 
-        #    bamdir=config["subdir"]["bam"], qc = config["subdir"]["qc"]),
-#
-        ## MACS2 output for individuals: BED files for peaks, binary TDF for IGV
-        #expand(["{outputdir}{macs2}{id}_peaks.narrowPeak",
-        #        "{outputdir}{macs2}{id}_linearFE_sorted.tdf", 
-        #        "{outputdir}{macs2}{id}_logLR_sorted.tdf"],
-        #    outputdir=config["outputdir"], id=config["ids"], macs2=config["subdir"]["macs2"]),
-#
-        ## combined output from pairs of replicates:
-        ## common peaks BED, IDR values, heatmap of peak profiles
-        #expand(["{outputdir}{macs2}{combineddir}{combined}_commonpeaks.bed",
-        #        "{outputdir}{macs2}{combineddir}{combined}_idrValues.txt",
-        #        "{outputdir}{macs2}{combineddir}{combined}-peaks-matrix-heatmap.png"],
-        #    outputdir=config["outputdir"], macs2=config["subdir"]["macs2"], 
-        #    combineddir=config["subdir"]["combined"], combined=config["combined"] ),
-#
-        ## summary files for everything:
-        ## union of all peaks BED, PCA, correlation and heatmap of peak profiles
-        #expand(["{outputdir}{macs2}{summarydir}summary-unionpeaks.bed",
-        #        "{outputdir}{macs2}{summarydir}summarybw-peak-pca.png",
-        #        "{outputdir}{macs2}{summarydir}summarybw-peak-corr-heatmap.png",
-        #        "{outputdir}{macs2}{summarydir}summarybw-peaks-matrix-heatmap.png"],
-        #    outputdir=config["outputdir"],
-        #    macs2=config["subdir"]["macs2"], summarydir=config["subdir"]["summary"] )
-
-#include: "rules/preprocessing.smk"
-#include: "rules/align.smk"
-#include: "rules/callpeak.smk"
-#include: "rules/igv.smk"
-#include: "rules/comparepairs.smk"
-#include: "rules/summarize.smk"
-#include: "rules/testrandomstuff.smk"
+include: "rules/preprocessing.smk"
+include: "rules/align.smk"
+include: "rules/callpeak.smk"
+include: "rules/igv.smk"
+include: "rules/comparepairs.smk"
+include: "rules/summarize.smk"
+include: "rules/testrandomstuff.smk"
 include: "rules/prototype.smk"
 
 

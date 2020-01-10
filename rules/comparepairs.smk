@@ -6,10 +6,10 @@
 rule getcommonpeaks:
 # find common peaks between two replicates (it doesn't work for >2 atm)
 	input:
-		lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined])
+		lambda x: map(lambda y: peaksdir + y + "_peaks.narrowPeak", config["combined"][x.combined])
 	output:
-		a=temp(combineddir + "{combined}_commonpeaks1.bed"),
-		b=temp(combineddir + "{combined}_commonpeaks2.bed")
+		a=temp(pairsdir + "{combined}_commonpeaks1.bed"),
+		b=temp(pairsdir + "{combined}_commonpeaks2.bed")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -20,10 +20,10 @@ rule extendcommonpeaks:
 # extend common peaks between two replicates
 # note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
-		a=combineddir + "{combined}_commonpeaks1.bed",
-		b=combineddir + "{combined}_commonpeaks2.bed"
+		a=pairsdir + "{combined}_commonpeaks1.bed",
+		b=pairsdir + "{combined}_commonpeaks2.bed"
 	output:
-		combineddir + "{combined}_commonpeaks.bed"
+		pairsdir + "{combined}_commonpeaks.bed"
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -35,10 +35,10 @@ rule extendcommonpeaks:
 rule idr:
 # calculate IDR statistic for the two replicates
 	input:
-		peakfiles=lambda x: map(lambda y: macs2dir + y + "_peaks.narrowPeak", config["combined"][x.combined]),
-		overlap=combineddir + "{combined}_commonpeaks.bed"
+		peakfiles=lambda x: map(lambda y: peaksdir + y + "_peaks.narrowPeak", config["combined"][x.combined]),
+		overlap=pairsdir + "{combined}_commonpeaks.bed"
 	output:
-		combineddir + "{combined}_idrValues.txt"
+		pairsdir + "{combined}_idrValues.txt"
 	log:
 		logdir + "idr/{combined}.log"
 	conda:
@@ -51,10 +51,10 @@ rule idr:
 rule computematrixbysample:
 # calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
 	input:
-		bwfiles=lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined]),
-		overlap=combineddir + "{combined}_commonpeaks.bed"
+		bwfiles=lambda x: map(lambda y: peaksdir + y + "_linearFE.bw", config["combined"][x.combined]),
+		overlap=pairsdir + "{combined}_commonpeaks.bed"
 	output:
-		gzipped=temp(combineddir + "{combined}-peaks-matrix.mat.gz")
+		gzipped=temp(pairsdir + "{combined}-peaks-matrix.mat.gz")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -68,9 +68,9 @@ rule plotheatmapbysample:
 # create heatmap for scores associated with common peaks (by sample)
 # for quality check --- see consistency of peak profiles
 	input:
-		combineddir + "{combined}-peaks-matrix.mat.gz"
+		pairsdir + "{combined}-peaks-matrix.mat.gz"
 	output:
-		combineddir + "{combined}-peaks-matrix-heatmap.png"
+		pairsdir + "{combined}-peaks-matrix-heatmap.png"
 	conda:
 		"../envs/py3.yml"
 	shell:

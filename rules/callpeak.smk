@@ -10,7 +10,7 @@ rule macs2:
 		sample = bamdir + "{id}_sorted.bam",
 		control = lambda x: bamdir + config["ids"][x.id] + "_sorted.bam"
 	output:
-		map(lambda macs2outfile: macs2dir + "{id}_" + macs2outfile, 
+		map(lambda macs2outfile: peaksdir + "{id}_" + macs2outfile, 
 			["peaks.narrowPeak", "treat_pileup.bdg", "control_lambda.bdg"])
 	log:
 		logdir + "macs2/{id}.log"
@@ -20,18 +20,18 @@ rule macs2:
 		"../envs/macs.yml"
 	shell:
 		"macs2 callpeak -t {input.sample} -c {input.control} "
-		"--name {wildcards.id} --outdir " + macs2dir + " "
+		"--name {wildcards.id} --outdir " + peaksdir + " "
 		"{params.settings} 2>{log}"
 
 rule bedgraph:
 # prepare bedgraph of linear fold enrichment and log10 likelihood
 # this needs to be run in a Python 2 environment
 	input: 
-		sample = macs2dir + "{id}_treat_pileup.bdg",
-		control = macs2dir + "{id}_control_lambda.bdg"
+		sample = peaksdir + "{id}_treat_pileup.bdg",
+		control = peaksdir + "{id}_control_lambda.bdg"
 	output:
-		FE = macs2dir + "{id}_linearFE.bdg",
-		logLR = macs2dir + "{id}_logLR.bdg"
+		FE = peaksdir + "{id}_linearFE.bdg",
+		logLR = peaksdir + "{id}_logLR.bdg"
 	conda:
 		"../envs/macs.yml"
 	shell:

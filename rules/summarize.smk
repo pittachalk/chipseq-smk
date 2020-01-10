@@ -7,7 +7,7 @@ rule compilepeakunion:
 # get the union of peaks between all samples
 # note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
-		map(lambda x: combineddir + x + "_commonpeaks.bed", config["combined"])
+		map(lambda x: pairsdir + x + "_commonpeaks.bed", config["combined"])
 	output:
 		summarydir + "summary-unionpeaks.bed"
 	conda:
@@ -21,7 +21,7 @@ rule multibigwigsummary:
 # computes the average scores for each replicate in every genomic region
 # for the entire genome (bins mode), and for consensus peaks
 	input:
-		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"]),
+		bwfiles=map(lambda x: peaksdir + x + "_linearFE.bw", config["ids"]),
 		overlap=summarydir + "summary-unionpeaks.bed"
 	output:
 		npzbins=summarydir + "summarybw-bins.npz",
@@ -66,7 +66,7 @@ rule pcacorr:
 rule computematrixall:
 # calculate scores per genome regions across all samples
 	input:
-		bwfiles=map(lambda x: macs2dir + x + "_linearFE.bw", config["ids"]),
+		bwfiles=map(lambda x: peaksdir + x + "_linearFE.bw", config["ids"]),
 		overlap=summarydir + "summary-unionpeaks.bed"
 	output:
 		gzipped=summarydir + "summarybw-peaks-matrix.mat.gz",

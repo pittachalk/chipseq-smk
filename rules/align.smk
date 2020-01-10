@@ -7,9 +7,9 @@ rule bwa_map:
 # run bwa aln to find the SA coordinates of the input reads (.sai file)
 # for paired-end, this part needs to be modified
 	input:
-		tempdir + "{sample}.fastq"
+		trimdir + "{sample}.fastq"
 	output:
-	    temp(tempdir + "{sample}.sai")
+	    temp(bamdir + "{sample}.sai") #bam
 	log:
 		logdir + "bwa/{sample}.log"
 	threads: 8
@@ -24,10 +24,10 @@ rule bwa_samse:
 # generate alignments from .sai file in the .sam format
 # for paired-end, this part needs to be modified to use bwa_sampe
 	input:
-		tempdir + "{sample}.sai", 
-		tempdir + "{sample}.fastq"
+		bamdir + "{sample}.sai", 
+		bamdir + "{sample}.fastq"
 	output:
-		temp(tempdir + "{sample}.sam")
+		temp(bamdir + "{sample}.sam")
 	log:
 		logdir + "bwa_samse/{sample}.log"
 	params:
@@ -40,7 +40,7 @@ rule bwa_samse:
 rule samtools:
 # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
 	input:
-		tempdir + "{sample}.sam"
+		bamdir + "{sample}.sam"
 	output:
 		flagstat = qcdir + "{sample}_alignstat.txt",
 		sortedbam = bamdir + "{sample}_sorted.bam",

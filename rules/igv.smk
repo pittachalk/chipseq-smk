@@ -6,11 +6,11 @@
 rule igvsort:
 # sort bedgraph
 	input: 
-		FE = macs2dir + "{id}_linearFE.bdg",
-		logLR = macs2dir + "{id}_logLR.bdg"
+		FE = peaksdir + "{id}_linearFE.bdg",
+		logLR = peaksdir + "{id}_logLR.bdg"
 	output: 
-		FE = temp(tempdir + "{id}_linearFE_sorted.bdg"),  # temp this later on!
-		logLR = temp(tempdir + "{id}_logLR_sorted.bdg")
+		FE = temp(peaksdir + "{id}_linearFE_sorted.bdg"),  # temp this later on!
+		logLR = temp(peaksdir + "{id}_logLR_sorted.bdg")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -20,11 +20,11 @@ rule igvsort:
 rule igvtotdf:
 # convert bedgraph to TDF for IGV
 	input: 
-		FE = tempdir + "{id}_linearFE_sorted.bdg",
-		logLR = tempdir + "{id}_logLR_sorted.bdg"
+		FE = peaksdir + "{id}_linearFE_sorted.bdg",
+		logLR = peaksdir + "{id}_logLR_sorted.bdg"
 	output: 
-		FE = macs2dir + "{id}_linearFE_sorted.tdf",
-		logLR = macs2dir + "{id}_logLR_sorted.tdf"
+		FE = peaksdir + "{id}_linearFE_sorted.tdf",
+		logLR = peaksdir + "{id}_logLR_sorted.tdf"
 	params:
 		ref=config["refgenome"]
 	conda:
@@ -37,9 +37,9 @@ rule bedgraphtobigwig:
 # convert bedgraph to bigwig for deeptools
 # this is only done for the linear fold enrichment bedgraph
 	input: 
-		tempdir + "{id}_linearFE_sorted.bdg"
+		peaksdir + "{id}_linearFE_sorted.bdg"
 	output: 
-		macs2dir + "{id}_linearFE.bw"
+		peaksdir + "{id}_linearFE.bw"
 	params:
 		ref=config["refchromsizes"]
 	conda:
@@ -51,9 +51,9 @@ rule bigwigmerge:
 # merge bigwig files into bedgraph
 # NOTE: mergedbigwig for visualisation only, not recommended as analysis
 	input:
-		lambda x: map(lambda y: macs2dir + y + "_linearFE.bw", config["combined"][x.combined])
+		lambda x: map(lambda y: peaksdir + y + "_linearFE.bw", config["combined"][x.combined])
 	output:
-		temp(tempdir + "{combined}_combined.bedGraph")
+		temp(pairsdir + "{combined}_combined.bedGraph")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -63,9 +63,9 @@ rule converttomultibigwig:
 # convert merged bedgraph into bigwig file
 # NOTE: mergedbigwig for visualisation only, not recommended as analysis
 	input:
-		tempdir + "{combined}_combined.bedGraph"
+		pairsdir + "{combined}_combined.bedGraph"
 	output:
-		combineddir + "{combined}_combined.bw"
+		pairsdir + "{combined}_combined.bw"
 	params:		
 		ref=config["refchromsizes"]
 	conda:

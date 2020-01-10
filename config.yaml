@@ -31,7 +31,7 @@ refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes
 
 # location of raw fastq files
-sampledir: data/samples/
+input: data/samples/
 
 
 ######################################################################
@@ -48,20 +48,19 @@ sampledir: data/samples/
 # IMPORTANT: make sure directories end with a forward slash /
 ######################################################################
 
-# location for output files of Snakemake pipeline
-outputdir: output/
+# location for output and log files of Snakemake pipeline
+out: output/
+log: log/
+
+subdir:
+  tmp: tmp/
 
 # subdirectories within outputdir
-# e.g. qc: qc/ will become outputdir/qc/
-subdir:
-  qc: qc/
-  log: log/
-  tmp: tmp/
-  bam: bam/
-  macs2: macs2/
-  summary: summary/    # processed as subdir of macs2
-  combined: combined/  # processed as subdir of macs2
-
+qc: qc/
+bam: bam/
+peaks: macs2_individual/
+pairs: macs2_sample/
+summary: macs2_summary/ 
 
 ######################################################################
 ######################################################################

@@ -6,9 +6,9 @@
 rule cat:
 # concatenate fastq.gz files of each sample
 	input:
-		lambda x: map(lambda y: sampledir + y, config["samples"][x.sample])
+		lambda x: map(lambda y: indir + y, config["samples"][x.sample])
 	output:
-		temp(tempdir + "{sample}_untrimmed.fastq.gz")
+		temp(trimdir + "{sample}_untrimmed.fastq.gz")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -17,9 +17,9 @@ rule cat:
 rule trim:
 # trim Illumina adapters from fastq.gz
 	input:
-		tempdir + "{sample}_untrimmed.fastq.gz"
+		trimdir + "{sample}_untrimmed.fastq.gz"
 	output:
-		temp(tempdir + "{sample}.fastq.gz")
+		temp(trimdir + "{sample}.fastq.gz")
 	log:
 		logdir + "trimmomatic/{sample}.log"
 	params:
@@ -32,9 +32,9 @@ rule trim:
 rule decompress:
 # unzip fastq.gz for BWA
 	input:
-		tempdir + "{sample}.fastq.gz"
+		trimdir + "{sample}.fastq.gz"
 	output:
-		temp(tempdir + "{sample}.fastq")
+		temp(trimdir + "{sample}.fastq")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -43,7 +43,7 @@ rule decompress:
 rule qctrim:
 # run FastQC on trimmed fastq.gz files
 	input:
-		tempdir + "{sample}.fastq.gz"
+		trimdir + "{sample}.fastq.gz"
 	output:
 		qcdir + "{sample}_fastqc.html",
 		qcdir + "{sample}_fastqc.zip"
