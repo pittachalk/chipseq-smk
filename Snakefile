@@ -48,40 +48,47 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        # alignment files for individuals:
-        # sorted BAM files and quality control reports
-        expand(["{bamdir}{sample}_sorted.bam", "{qcdir}{sample}_fastqc.html"], 
-           sample=config["samples"], bamdir=bamdir, qcdir=qcdir),
+        bamdir + "SING-rep1-L1.sai"
+        #trimdir + "PAIR_A-rep1-L1.pair1.fq.gz"
+        #bamdir + "PAIR_A-rep1-L1.sai"
+        #
 
-        # MACS2 output for individuals: BED files for peaks, binary TDF for IGV
-        expand(["{peaksdir}{id}_peaks.narrowPeak","{peaksdir}{id}_linearFE_sorted.tdf", 
-                "{peaksdir}{id}_logLR_sorted.tdf"], id=config["ids"], peaksdir=peaksdir),
+        #bamdir + "{name}-rep{replic}-{lane}.sai"
 
-        # combined output from pairs of replicates:
-        # common peaks BED, IDR values, heatmap of peak profiles
-        expand(["{pairsdir}{combined}_commonpeaks.bed",
-               "{pairsdir}{combined}_idrValues.txt",
-               "{pairsdir}{combined}-peaks-matrix-heatmap.png"], 
-           pairsdir=pairsdir, combined=config["combined"] ),
+        # # alignment files for individuals:
+        # # sorted BAM files and quality control reports
+        # expand(["{bamdir}{sample}_sorted.bam", "{qcdir}{sample}_fastqc.html"], 
+        #    sample=config["samples"], bamdir=bamdir, qcdir=qcdir),
 
-        # summary files for everything:
-        # union of all peaks BED, PCA, correlation and heatmap of peak profiles
-        expand(["{summarydir}summary-unionpeaks.bed",
-               "{summarydir}summarybw-peak-pca.png",
-               "{summarydir}summarybw-peak-corr-heatmap.png",
-               "{summarydir}summarybw-peaks-matrix-heatmap.png"],
-           summarydir=summarydir)
+        # # MACS2 output for individuals: BED files for peaks, binary TDF for IGV
+        # expand(["{peaksdir}{id}_peaks.narrowPeak","{peaksdir}{id}_linearFE_sorted.tdf", 
+        #         "{peaksdir}{id}_logLR_sorted.tdf"], id=config["ids"], peaksdir=peaksdir),
 
-        #expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique()),
-        #"testRoutput.pdf"
+        # # combined output from pairs of replicates:
+        # # common peaks BED, IDR values, heatmap of peak profiles
+        # expand(["{pairsdir}{combined}_commonpeaks.bed",
+        #        "{pairsdir}{combined}_idrValues.txt",
+        #        "{pairsdir}{combined}-peaks-matrix-heatmap.png"], 
+        #    pairsdir=pairsdir, combined=config["combined"] ),
 
-include: "rules/preprocessing.smk"
-include: "rules/align.smk"
-include: "rules/callpeak.smk"
-include: "rules/igv.smk"
-include: "rules/comparepairs.smk"
-include: "rules/summarize.smk"
-include: "rules/testrandomstuff.smk"
+        # # summary files for everything:
+        # # union of all peaks BED, PCA, correlation and heatmap of peak profiles
+        # expand(["{summarydir}summary-unionpeaks.bed",
+        #        "{summarydir}summarybw-peak-pca.png",
+        #        "{summarydir}summarybw-peak-corr-heatmap.png",
+        #        "{summarydir}summarybw-peaks-matrix-heatmap.png"],
+        #    summarydir=summarydir)
+
+        # #expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique()),
+        # #"testRoutput.pdf"
+
+#include: "rules/preprocessing.smk"
+#include: "rules/align.smk"
+#include: "rules/callpeak.smk"
+#include: "rules/igv.smk"
+#include: "rules/comparepairs.smk"
+#include: "rules/summarize.smk"
+#include: "rules/testrandomstuff.smk"
 include: "rules/prototype.smk"
 
 
