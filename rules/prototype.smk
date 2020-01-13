@@ -43,13 +43,13 @@ def get_trimmed_fq(wildcards):
         return expand(trimdir + "{name}-rep{replic}-{lane}.{pair}.fq.gz", 
             name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
 
-rule bwa_new:
+rule bwamem:
     # bwa is run on each lane separately
     # this is the step where paired end reads are combined
     input:
         get_trimmed_fq
     output:
-        bamdir + "{name}-rep{replic}-{lane}.sai"
+        bamdir + "{name}-rep{replic}-{lane}.sam"
     log:
         logdir + "bwa/{name}-rep{replic}-{lane}.log"
     threads: 8
@@ -58,54 +58,102 @@ rule bwa_new:
     conda:
         "../envs/py3.yml"
     shell:
-        "bwa aln -t {threads} {params.ref} {input} 2>{log} >{output} "
+        "bwa mem -t {threads} {params.ref} {input} 2>{log} >{output}"
 
-# ##########################################################################################
-# ##########################################################################################
-# ##########################################################################################
+rule sort_bam_lanes:
+    # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
+	input:
+		bamdir + "{name}-rep{replic}-{lane}.sam"
+	output:
+		sortedbam = bamdir + "{name}-rep{replic}-{lane}.sorted.bam"
+	conda:
+		"../envs/py3.yml"
+	shell:
+		"samtools view -bS {input} | samtools sort - -o {output.sortedbam}"
 
 def get_bam_lanes(wildcards):
     lanes   = fastq_info[(fastq_info["name"] == wildcards.name) &  (fastq_info["rep"] == wildcards.replic)]["lane"]
-    return expand(bamdir + "{name}-rep{replic}-{lane}.sai", name = wildcards.name, replic = wildcards.replic, lane = lanes)
+    return expand(bamdir + "{name}-rep{replic}-{lane}.sorted.bam", name = wildcards.name, replic = wildcards.replic, lane = lanes)
 
-rule proto_cat_bam:
-   # now we cat the bam files from separate lanes
-   # this will be replaced with conversion to sam, so the cat is just placeholder
-   # output: {name}.{replicate}-aligned.txt
-   input:
-       fq = get_bam_lanes
-   output:
-       "test/{name}-rep{replic}.merged.bam"
-   shell:
-       "cat {input} > {output}"
+rule merge_bam_lanes:
+    # now we cat the bam files from separate lanes
+    # this will be replaced with conversion to sam, so the cat is just placeholder
+    # output: {name}.{replicate}-aligned.txt
+    input:
+        fq = get_bam_lanes
+    output:
+        bamdir + "{name}-rep{replic}.merged.bam"
+    shell:
+        "samtools merge {output} {input}"
 
-def get_treatvscontrol_bam(wildcards):
+rule sortindex_mergedbam:
+    # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
+    input:
+        bamdir + "{name}-rep{replic}.merged.bam"
+    output:
+        flagstat = bamdir + "{name}-rep{replic}.merged.alignstat.txt",
+        sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam",
+        bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "samtools flagstat {input} > {output.flagstat}; "
+        "samtools view -bS {input} | "
+        "samtools sort - -o {output.sortedbam}"
+
+def get_treatvscontrol(wildcards):
     # this should give a single row describing the treatment vs control pairing
     x = control_info[(control_info["id"] == wildcards.id) & (control_info["idrep"] == wildcards.idrep)]
 
-    treat = expand("test/{treatname}-rep{treatrep}.merged.bam", treatname = x["treatname"], treatrep = x["treatrep"])
-    control = expand("test/{controlname}-rep{controlrep}.merged.bam", controlname = x["controlname"], controlrep = x["controlrep"])
+    treat = expand(bamdir + "{treatname}-rep{treatrep}.merged.bam",
+        treatname = x["treatname"], treatrep = x["treatrep"])
+    control = expand(bamdir + "{controlname}-rep{controlrep}.merged.bam", 
+        controlname = x["controlname"], controlrep = x["controlrep"])
     
     assert (len(treat) == 1), "treated list not length 1, are id-idrep pairs unique?"
     assert (len(control) == 1), "control list not length 1, are id-idrep pairs unique?"
 
     return (treat[0], control[0])
 
-rule proto_vsinput:
-    # compare vs input
-    # output: {name}-controlled.txt
+
+rule macs2:
+    # call peaks with MACS2 2.1.2, run in a Python 2 environment
     input:
-        bam = get_treatvscontrol_bam
+        bam = get_treatvscontrol
     output:
-        "test/{id}-{idrep}.narrowPeak"
+        peaksdir + "{id}-{idrep}.narrowPeak", #change to include bdg too
+        peaksdir + "{id}-{idrep}_treat_pileup.bdg",
+        peaksdir + "{id}-{idrep}_control_lambda.bdg"
+    log:
+        logdir + "macs2/{id}-{idrep}.log"
+    params:
+        settings=config["macs2"]["settings"]
+    conda:
+        "../envs/macs.yml"
     shell:
-        "cat t {input.bam[0]} c {input.bam[1]} > {output}"
+        "macs2 callpeak -t {input.bam[0]} -c {input.bam[1]} "
+        "--name {wildcards.id}-{wildcards.idrep} --outdir " + peaksdir + " "
+        "{params.settings} 2>{log}"
+
+rule bedgraph:
+    # prepare bedgraph of fold enrichment, run in a Python 2 environment
+	input: 
+		sample = peaksdir + "{id}-{idrep}_treat_pileup.bdg",
+		control = peaksdir + "{id}-{idrep}_control_lambda.bdg"
+	output:
+		FE = peaksdir + "{id}-{idrep}_linearFE.bdg",
+		logLR = peaksdir + "{id}-{idrep}_logLR.bdg"
+	conda:
+		"../envs/macs.yml"
+	shell:
+		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.FE} -m FE; "
+		"macs2 bdgcmp -t {input.sample} -c {input.control} -o {output.logLR} -m logLR --pseudocount 0.00001"
+
 
 
 def are_there_replicates(id):
     # check if there are replicates for a given id
     return (len(control_info.loc[id]) > 1)
-
 
 def get_replicate_list(wildcards):
     # returns a list of of replicates for a given id, if those exist
@@ -113,7 +161,7 @@ def get_replicate_list(wildcards):
     # I THINK PE AND SE WORKS BECAUSE THEY COMPLEMENT EACH OTHER
     # this function might not even be necessary anymore, can merge with proto_combineallreplicates
     if(are_there_replicates(wildcards.id)):
-        return expand("test/{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+        return expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
     else:
         raise ValueError("There are no replicates for this ID.")
 
@@ -123,31 +171,33 @@ rule proto_combineallreplicates:
     input:
         replicates = get_replicate_list
     output:
-        "test/{id}.commonpeaks.bed"
+        summarydir + "{id}.commonpeaks.bed"
     shell:
         "cat a {input.replicates[0]} b {input.replicates[1]} > {output}"
 
-def get_replicate_pairs(wildcards):
-    # returns all pairwise combinations of replicates for a given id, if those exist
-    # returns all pairwise combinations of replicates for a given id, if those exist
-    # THIS NEEDS TO BE IN A SEPARATE FUNCTION
-    # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
-    if(are_there_replicates(wildcards.id)):
-        replicate_list = control_info.loc[wildcards.id]["idrep"]
-        pairs = itertools.combinations(replicate_list, 2)
-        return expand("test/{id}-{x[0]}.narrowPeak test/{id}-{x[1]}.narrowPeak", id = wildcards.id, x = pairs)
-    else:
-        raise ValueError("There are no replicates for this ID.")
 
-rule proto_comparereplicatecombinations:
-    # equivalent to calling common peaks
-    # probably need a separate script for this
-    # output: {name}-commonpeaks.txt
-    # THIS NEEDS TO BE IN A SEPARATE FUNCTION
-    # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
-    input:
-        pairs = get_replicate_pairs
-    output:
-        "test/{id}.pairs.bed"
-    shell:
-        "cat {input.pairs} > {output}"
+
+# def get_replicate_pairs(wildcards):
+#     # returns all pairwise combinations of replicates for a given id, if those exist
+#     # returns all pairwise combinations of replicates for a given id, if those exist
+#     # THIS NEEDS TO BE IN A SEPARATE FUNCTION
+#     # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
+#     if(are_there_replicates(wildcards.id)):
+#         replicate_list = control_info.loc[wildcards.id]["idrep"]
+#         pairs = itertools.combinations(replicate_list, 2)
+#         return expand("test/{id}-{x[0]}.narrowPeak test/{id}-{x[1]}.narrowPeak", id = wildcards.id, x = pairs)
+#     else:
+#         raise ValueError("There are no replicates for this ID.")
+
+# rule proto_comparereplicatecombinations:
+#     # equivalent to calling common peaks
+#     # probably need a separate script for this
+#     # output: {name}-commonpeaks.txt
+#     # THIS NEEDS TO BE IN A SEPARATE FUNCTION
+#     # GENERATING PAIRS AS INPUT DOESNT WORK BECAUSE THOSE HAVE TO BE THE OUTPUT OF SOMETHING
+#     input:
+#         pairs = get_replicate_pairs
+#     output:
+#         "test/{id}.pairs.bed"
+#     shell:
+#         "cat {input.pairs} > {output}"

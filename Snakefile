@@ -48,7 +48,7 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique())
+        expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique())
 
 #include: "rules/preprocessing.smk"
 #include: "rules/align.smk"
