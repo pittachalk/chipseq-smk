@@ -28,6 +28,7 @@ summarydir  = join(outdir, config["summary"], "")
 # reading CSVs about fastq file and treated-control information
 fastq_info = pd.read_csv("info-fastq.csv")
 fastq_info["rep"] = fastq_info["rep"].astype(str)
+fastq_info["lane"] = fastq_info["lane"].astype(str)
 fastq_info = fastq_info.set_index(["name", "rep", "lane"], drop=False)
 
 control_info = pd.read_csv("info-control.csv")
@@ -48,7 +49,9 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        bamdir + "SING-rep1-L1.sai"
+        #bamdir + "SING-rep1-1.sai",
+        bamdir + "PAIR_A-rep1-1.sai",
+
         #trimdir + "PAIR_A-rep1-L1.pair1.fq.gz"
         #bamdir + "PAIR_A-rep1-L1.sai"
         #
@@ -79,7 +82,7 @@ rule all:
         #        "{summarydir}summarybw-peaks-matrix-heatmap.png"],
         #    summarydir=summarydir)
 
-        # #expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique()),
+        expand("test/{id}.commonpeaks.bed", id = control_info["id"].unique())
         # #"testRoutput.pdf"
 
 #include: "rules/preprocessing.smk"
