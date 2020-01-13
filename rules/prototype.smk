@@ -1,25 +1,9 @@
-#wildcard_constraints:
-#    lane="[0-9]+"
-
 def is_single_end(name, replic, lane):
     """
     Check if there is a second fastq file for the given sample.
     """
     return pd.isnull(fastq_info.loc[(name, replic, lane), "fq2"])
 
-# def get_fq_se(wildcards):
-#     if(is_single_end(wildcards.name, wildcards.replic, wildcards.lane)):
-#         return indir + fastq_info.loc[(wildcards.name, wildcards.replic, wildcards.lane), "fq1"]
-#     else:
-#         raise ValueError("This is a paired-end sample")
-
-# def get_fq_pe(wildcards):
-#     if(is_single_end(wildcards.name, wildcards.replic, wildcards.lane)):
-#         raise ValueError("This is a single-end sample")
-#     else:
-#         return indir + fastq_info.loc[(wildcards.name, wildcards.replic, wildcards.lane), ["fq1", "fq2"]]
-
-# this is much cleaner
 def get_fastq(wildcards):
     return indir + fastq_info.loc[(wildcards.name, wildcards.replic, wildcards.lane), ["fq1", "fq2"]].dropna()
 
@@ -32,27 +16,31 @@ rule trimSE:
         logdir + "trimmomatic/{name}-rep{replic}-{lane}.log"
     params:
         settings = config["trimmomatic"]["settings"]
+    threads: 8
     shell:
-        "trimmomatic SE {input} {output} {params.settings} 2>{log}"
+        "trimmomatic SE -threads {threads} {input} {output} {params.settings} 2>{log}"
 
 rule trimPE:
     input:
         get_fastq
     output:
-        fq1 = trimdir + "{name}-rep{replic}-{lane}.pair1.fq.gz",
-        fq2 = trimdir + "{name}-rep{replic}-{lane}.pair2.fq.gz"
+        fq1 = trimdir + "{name}-rep{replic}-{lane}.1.fq.gz",
+        fq2 = trimdir + "{name}-rep{replic}-{lane}.2.fq.gz",
+        fq1_unpaired = trimdir + "{name}-rep{replic}-{lane}.1.unpaired.fq.gz",
+        fq2_unpaired = trimdir + "{name}-rep{replic}-{lane}.2.unpaired.fq.gz"
     log:
         logdir + "trimmomatic/{name}-rep{replic}-{lane}.log"
     params:
         settings=config["trimmomatic"]["settings"]
+    threads: 8
     shell:
-        "trimmomatic PE {input} {output} {params.settings} 2>{log}"
+        "trimmomatic PE -threads {threads} {input} {output.fq1} {output.fq1_unpaired} {output.fq2} {output.fq2_unpaired} {params.settings} 2>{log}"
 
 def get_trimmed_fq(wildcards):
     if is_single_end(wildcards.name, wildcards.replic, wildcards.lane):
         return trimdir + "{name}-rep{replic}-{lane}.fq.gz".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
     else:
-        return expand(trimdir + "{name}-rep{replic}-{lane}.pair{pair}.fq.gz", 
+        return expand(trimdir + "{name}-rep{replic}-{lane}.{pair}.fq.gz", 
             name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
 
 rule bwa_new:
@@ -75,46 +63,6 @@ rule bwa_new:
 # ##########################################################################################
 # ##########################################################################################
 # ##########################################################################################
-
-# rule proto_trimSE:
-#     # output: {name}-{replicate}-{lane}.txt   
-#     input:
-#         get_fq_se
-#     output:
-#         fq = "test/{name}-rep{replic}-{lane}.fq.gz"
-#   #log:
-#   #   logdir + "test/trimPE/{name}-rep{replic}-{lane}.log"
-#   #params:
-#   #   settings=config["trimmomatic"]["settings"]
-#     shell:
-#         "cat {input} > {output}"
-#       #"trimmomatic PE {input} {output} {params.settings} 2>{log}"
-
-# rule proto_trimPE:
-#     # output: {name}-{replicate}-{lane}.1.txt, {name}-{replicate}-{lane}.2.txt
-#     input:
-#         get_fq_pe
-#     output:
-#         fq1 = "test/{name}-rep{replic}-{lane}.1.fq.gz",
-#         fq2 = "test/{name}-rep{replic}-{lane}.2.fq.gz"
-#   #log:
-#     # logdir + "test/trimPE/{name}-{replic}-{lane}.log"
-#   #params:
-#   #   settings=config["trimmomatic"]["settings"]
-#     shell:
-#         "cat {input} > {output}"
-#       #"trimmomatic PE {input} {output} {params.settings} 2>{log}"
-    
-
-# rule proto_bwa:
-#     # bwa is run on each lane separately
-#     # this is the step where paired end reads are combined
-#     input:
-#         fq = get_trimmed_fq
-#     output:
-#         "test/{name}-rep{replic}-{lane}.bam"
-#     shell:
-#         "cat {input} > {output}"
 
 def get_bam_lanes(wildcards):
     lanes   = fastq_info[(fastq_info["name"] == wildcards.name) &  (fastq_info["rep"] == wildcards.replic)]["lane"]
