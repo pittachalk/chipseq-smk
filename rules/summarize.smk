@@ -3,13 +3,22 @@
 #     Summary files
 ######################################################################
 
-rule compilepeakunion:
+def get_replicate_bws(wildcards):
+    # returns a list of bw of replicates for a given id, if those exist
+    # this might crash if there are no replicates (to debug)
+    if(are_there_replicates(wildcards.id)):
+        return expand(bwdir + "{id}-{idrep}_linearFE.bw", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+
+rule getoverallunion:
 # get the union of peaks between all samples
 # note: used 'count' for summit (column 10), because later steps need this to be an integer
 	input:
-		map(lambda x: pairsdir + x + "_commonpeaks.bed", config["combined"])
+		expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique())
 	output:
-		summarydir + "summary-unionpeaks.bed"
+		overalldir + "overall.unionpeaks.bed"
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -18,16 +27,16 @@ rule compilepeakunion:
 		"> {output}"
 
 rule multibigwigsummary:
-# computes the average scores for each replicate in every genomic region
-# for the entire genome (bins mode), and for consensus peaks
+	# computes the average scores for every bw in every genomic region
+	# for the entire genome (bins mode), and for consensus peaks
 	input:
-		bwfiles=map(lambda x: peaksdir + x + "_linearFE.bw", config["ids"]),
-		overlap=summarydir + "summary-unionpeaks.bed"
+		bwfiles = expand(bwdir + "{id}-{idrep}_linearFE.bw", zip, id=control_info["id"], idrep=control_info["idrep"]),
+		overlap = overalldir + "overall.unionpeaks.bed"
 	output:
-		npzbins=summarydir + "summarybw-bins.npz",
-		tabbins=summarydir + "summarybw-bins.tab",
-		npzpeak=summarydir + "summarybw-peak.npz", 
-		tabpeak=summarydir + "summarybw-peak.tab"
+		npzbins = overalldir + "overallbw-bins.npz",
+		tabbins = overalldir + "overallbw-bins.tab",
+		npzpeak = overalldir + "overallbw-peak.npz", 
+		tabpeak = overalldir + "overallbw-peak.tab"
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -39,13 +48,13 @@ rule multibigwigsummary:
 rule pcacorr:
 # plot PCA and correlation plots for replicates of ALL samples
 	input:
-		npzbins=summarydir + "summarybw-bins.npz",
-		npzpeak=summarydir + "summarybw-peak.npz"
+		npzbins = overalldir + "overallbw-bins.npz",
+		npzpeak = overalldir + "overallbw-peak.npz"
 	output:
-		pcabins=summarydir + "summarybw-bins-pca.png",
-		corrbins=[summarydir + "summarybw-bins-corr-heatmap" + f for f in [".png", ".tab"]],
-		pcapeak=summarydir + "summarybw-peak-pca.png",
-		corrpeak=[summarydir + "summarybw-peak-corr-heatmap" + f for f in [".png", ".tab"]]
+		pcabins  = overalldir + "overallbw-bins-pca.png",
+		corrbins = [overalldir + "overallbw-bins-corr-heatmap" + f for f in [".png", ".tab"]],
+		pcapeak  = overalldir + "overallbw-peak-pca.png",
+		corrpeak = [overalldir + "overallbw-peak-corr-heatmap" + f for f in [".png", ".tab"]]
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -66,11 +75,11 @@ rule pcacorr:
 rule computematrixall:
 # calculate scores per genome regions across all samples
 	input:
-		bwfiles=map(lambda x: peaksdir + x + "_linearFE.bw", config["ids"]),
-		overlap=summarydir + "summary-unionpeaks.bed"
+		bwfiles = expand(bwdir + "{id}-{idrep}_linearFE.bw", zip, id=control_info["id"], idrep=control_info["idrep"]),
+		overlap = overalldir + "overall.unionpeaks.bed"
 	output:
-		gzipped=summarydir + "summarybw-peaks-matrix.mat.gz",
-		tab=summarydir + "summarybw-peaks-matrix.tab"
+		gzipped = overalldir + "overallbw-peaks-matrix.mat.gz",
+		tab = overalldir + "overallbw-peaks-matrix.tab"
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -83,9 +92,9 @@ rule computematrixall:
 rule plotheatmapall:
 # create heatmap for scores associated with the union of peak regions
 	input:
-		summarydir + "summarybw-peaks-matrix.mat.gz"
+		overalldir + "overallbw-peaks-matrix.mat.gz"
 	output:
-		summarydir + "summarybw-peaks-matrix-heatmap.png"
+		overalldir + "overallbw-peaks-matrix-heatmap.png"
 	conda:
 		"../envs/py3.yml"
 	shell:
