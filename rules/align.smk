@@ -1,54 +1,64 @@
-######################################################################
-######################################################################
-#     BWA alignment and samtools
-######################################################################
+def get_trimmed_fq(wildcards):
+    if is_single_end(wildcards.name, wildcards.replic, wildcards.lane):
+        return trimdir + "{name}-rep{replic}-{lane}.fq.gz".format(name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane)
+    else:
+        return expand(trimdir + "{name}-rep{replic}-{lane}.{pair}.fq.gz", 
+            name = wildcards.name, replic = wildcards.replic, lane = wildcards.lane, pair = [1, 2])
 
-# rule bwa_map:
-# # run bwa aln to find the SA coordinates of the input reads (.sai file)
-# # for paired-end, this part needs to be modified
-# 	input:
-# 		trimdir + "{sample}.fastq"
-# 	output:
-# 	    temp(bamdir + "{sample}.sai") #bam
-# 	log:
-# 		logdir + "bwa/{sample}.log"
-# 	threads: 8
-# 	params:
-# 		ref=config["refgenome"]
-# 	conda:
-# 		"../envs/py3.yml"
-# 	shell:
-# 		"bwa aln -t {threads} {params.ref} {input} 2>{log} >{output} "
+rule bwamem:
+    # bwa is run on each lane separately
+    # this is the step where paired end reads are combined
+    input:
+        get_trimmed_fq
+    output:
+        bamdir + "{name}-rep{replic}-{lane}.sam"
+    log:
+        logdir + "bwa/{name}-rep{replic}-{lane}.log"
+    threads: 8
+    params:
+        ref=config["refgenome"]
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "bwa mem -t {threads} {params.ref} {input} 2>{log} >{output}"
 
-rule bwa_samse:
-# generate alignments from .sai file in the .sam format
-# for paired-end, this part needs to be modified to use bwa_sampe
+rule sort_bam_lanes:
+    # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
 	input:
-		bamdir + "{sample}.sai", 
-		bamdir + "{sample}.fastq"
+		bamdir + "{name}-rep{replic}-{lane}.sam"
 	output:
-		temp(bamdir + "{sample}.sam")
-	log:
-		logdir + "bwa_samse/{sample}.log"
-	params:
-		ref=config["refgenome"]
+		sortedbam = bamdir + "{name}-rep{replic}-{lane}.sorted.bam"
 	conda:
 		"../envs/py3.yml"
 	shell:
-		"bwa samse -n 50 {params.ref} {input} 2>{log} >{output}"
+		"samtools view -bS {input} | samtools sort - -o {output.sortedbam}"
 
-# rule samtools:
-# # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
-# 	input:
-# 		bamdir + "{sample}.sam"
-# 	output:
-# 		flagstat = qcdir + "{sample}_alignstat.txt",
-# 		sortedbam = bamdir + "{sample}_sorted.bam",
-# 		bai = bamdir + "{sample}_sorted.bam.bai"
-# 	conda:
-# 		"../envs/py3.yml"
-# 	shell:
-# 		"samtools flagstat {input} > {output.flagstat}; "
-# 		"samtools view -bS {input} | "
-# 		"samtools sort - -o {output.sortedbam}; "
-# 		"samtools index {output.sortedbam}"
+def get_bam_lanes(wildcards):
+    lanes   = fastq_info[(fastq_info["name"] == wildcards.name) &  (fastq_info["rep"] == wildcards.replic)]["lane"]
+    return expand(bamdir + "{name}-rep{replic}-{lane}.sorted.bam", name = wildcards.name, replic = wildcards.replic, lane = lanes)
+
+rule merge_bam_lanes:
+    # now we cat the bam files from separate lanes
+    # this will be replaced with conversion to sam, so the cat is just placeholder
+    # output: {name}.{replicate}-aligned.txt
+    input:
+        fq = get_bam_lanes
+    output:
+        bamdir + "{name}-rep{replic}.merged.bam"
+    shell:
+        "samtools merge {output} {input}"
+
+rule sortindex_mergedbam:
+    # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
+    input:
+        bamdir + "{name}-rep{replic}.merged.bam"
+    output:
+        flagstat = bamdir + "{name}-rep{replic}.merged.alignstat.txt",
+        sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam",
+        bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "samtools flagstat {input} > {output.flagstat}; "
+        "samtools view -bS {input} | "
+        "samtools sort - -o {output.sortedbam}"

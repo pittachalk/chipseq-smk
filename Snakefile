@@ -56,13 +56,12 @@ rule all:
         overalldir + "overall.unionpeaks.bed",
         overalldir + "overallbw-peaks-matrix-heatmap.png"
 
-#include: "rules/preprocessing.smk"
-#include: "rules/align.smk"
-#include: "rules/callpeak.smk"
+include: "rules/trim.smk"
+include: "rules/align.smk"
+include: "rules/callpeak.smk"
 include: "rules/igv.smk"
 include: "rules/comparepairs.smk"
 include: "rules/summarize.smk"
 #include: "rules/testrandomstuff.smk"
-include: "rules/prototype.smk"
 
 
