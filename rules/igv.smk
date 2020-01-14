@@ -6,11 +6,11 @@
 rule igvsort:
 # sort bedgraph
 	input: 
-		FE = peaksdir + "{id}_linearFE.bdg",
-		logLR = peaksdir + "{id}_logLR.bdg"
+		FE = peaksdir + "{id}-{idrep}_linearFE.bdg",
+		logLR = peaksdir + "{id}-{idrep}_logLR.bdg"
 	output: 
-		FE = temp(peaksdir + "{id}_linearFE_sorted.bdg"),  # temp this later on!
-		logLR = temp(peaksdir + "{id}_logLR_sorted.bdg")
+		FE = temp(bwdir + "{id}-{idrep}_linearFE_sorted.bdg"), 
+		logLR = temp(bwdir + "{id}-{idrep}_logLR_sorted.bdg")
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -20,11 +20,11 @@ rule igvsort:
 rule igvtotdf:
 # convert bedgraph to TDF for IGV
 	input: 
-		FE = peaksdir + "{id}_linearFE_sorted.bdg",
-		logLR = peaksdir + "{id}_logLR_sorted.bdg"
+		FE = bwdir + "{id}-{idrep}_linearFE_sorted.bdg",
+		logLR = bwdir + "{id}-{idrep}_logLR_sorted.bdg"
 	output: 
-		FE = peaksdir + "{id}_linearFE_sorted.tdf",
-		logLR = peaksdir + "{id}_logLR_sorted.tdf"
+		FE = bwdir + "{id}-{idrep}_linearFE_sorted.tdf",
+		logLR = bwdir + "{id}-{idrep}_logLR_sorted.tdf"
 	params:
 		ref=config["refgenome"]
 	conda:
@@ -37,9 +37,9 @@ rule bedgraphtobigwig:
 # convert bedgraph to bigwig for deeptools
 # this is only done for the linear fold enrichment bedgraph
 	input: 
-		peaksdir + "{id}_linearFE_sorted.bdg"
+		bwdir + "{id}-{idrep}_linearFE_sorted.bdg"
 	output: 
-		peaksdir + "{id}_linearFE.bw"
+		bwdir + "{id}-{idrep}_linearFE.bw"
 	params:
 		ref=config["refchromsizes"]
 	conda:
@@ -47,28 +47,4 @@ rule bedgraphtobigwig:
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"
 
-rule bigwigmerge:
-# merge bigwig files into bedgraph
-# NOTE: mergedbigwig for visualisation only, not recommended as analysis
-	input:
-		lambda x: map(lambda y: peaksdir + y + "_linearFE.bw", config["combined"][x.combined])
-	output:
-		temp(pairsdir + "{combined}_combined.bedGraph")
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"bigWigMerge {input} {output}"
 
-rule converttomultibigwig:
-# convert merged bedgraph into bigwig file
-# NOTE: mergedbigwig for visualisation only, not recommended as analysis
-	input:
-		pairsdir + "{combined}_combined.bedGraph"
-	output:
-		pairsdir + "{combined}_combined.bw"
-	params:		
-		ref=config["refchromsizes"]
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"bedGraphToBigWig {input} {params.ref} {output}"

@@ -21,6 +21,7 @@ logdir      = config["log"]
 trimdir     = join(outdir, "trim/", "")
 qcdir       = join(outdir, config["qc"], "")
 bamdir      = join(outdir, config["bam"], "")
+bwdir       = join(outdir, "bw/", "")
 peaksdir    = join(outdir, config["peaks"], "")
 pairsdir    = join(outdir, config["pairs"], "")
 summarydir  = join(outdir, config["summary"], "")
@@ -53,7 +54,7 @@ rule all:
 #include: "rules/preprocessing.smk"
 #include: "rules/align.smk"
 #include: "rules/callpeak.smk"
-#include: "rules/igv.smk"
+include: "rules/igv.smk"
 #include: "rules/comparepairs.smk"
 #include: "rules/summarize.smk"
 #include: "rules/testrandomstuff.smk"
