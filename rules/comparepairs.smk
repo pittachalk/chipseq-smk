@@ -3,74 +3,95 @@
 #     Compare individual pairs of replicates
 ######################################################################
 
-rule getcommonpeaks:
-# find common peaks between two replicates (it doesn't work for >2 atm)
-	input:
-		lambda x: map(lambda y: peaksdir + y + "_peaks.narrowPeak", config["combined"][x.combined])
-	output:
-		a=temp(pairsdir + "{combined}_commonpeaks1.bed"),
-		b=temp(pairsdir + "{combined}_commonpeaks2.bed")
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"bedtools intersect -a {input[0]} -b {input[1]} -wa > {output.a}; "
-		"bedtools intersect -a {input[1]} -b {input[0]} -wa > {output.b}"
+def are_there_replicates(id):
+    # check if there are replicates for a given id/species
+    return (len(control_info.loc[id]) > 1)
 
-rule extendcommonpeaks:
-# extend common peaks between two replicates
-# note: used 'count' for summit (column 10), because later steps need this to be an integer
-	input:
-		a=pairsdir + "{combined}_commonpeaks1.bed",
-		b=pairsdir + "{combined}_commonpeaks2.bed"
-	output:
-		pairsdir + "{combined}_commonpeaks.bed"
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"cat {input} | bedtools sort | "
-		"bedtools merge -c 4,5,6,7,8,9,10 -o collapse,mean,collapse,mean,mean,mean,count | "
+def get_first_sample(wildcards):
+    # returns the first sample from a list of of replicates for a given id, if those exist
+    # this might crash if there are no replicates (to debug)
+    if(are_there_replicates(wildcards.id)):
+        replist = expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+        return replist[0]
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+def get_other_replicates(wildcards):
+    # returns a list of replicates excluding the first for a given id, if those exist
+    # this might crash if there are no replicates (to debug)
+    if(are_there_replicates(wildcards.id)):
+        replist = expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+        replist.pop(0)
+        return replist
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+def get_replicate_list(wildcards):
+    # returns a list of of replicates for a given id, if those exist
+    # this might crash if there are no replicates (to debug)
+    if(are_there_replicates(wildcards.id)):
+        return expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+    else:
+        raise ValueError("There are no replicates for this ID.")
+
+rule getsampleintersect:
+    # find common peaks between all replicates for a given id
+    input:
+        first = get_first_sample,
+        others = get_other_replicates
+    output:
+        summarydir + "{id}.intersect.bed"
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "bedtools intersect -a {input.first} -b {input.others} -wa > {output}"
+
+rule getsampleunion:
+    # extend the common peaks
+    input:
+        get_replicate_list
+    output:
+        summarydir + "{id}.commonpeaks.bed"
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "cat {input} | bedtools sort | "
+        "bedtools merge -c 4,5,6,7,8,9,10 -o mean,mean,mean,mean,mean,mean,count | "
 		"""awk '$6="."' FS="\t" OFS="\t" """
 		"> {output}"
 
-rule idr:
-# calculate IDR statistic for the two replicates
-	input:
-		peakfiles=lambda x: map(lambda y: peaksdir + y + "_peaks.narrowPeak", config["combined"][x.combined]),
-		overlap=pairsdir + "{combined}_commonpeaks.bed"
-	output:
-		pairsdir + "{combined}_idrValues.txt"
-	log:
-		logdir + "idr/{combined}.log"
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"idr --samples {input.peakfiles} "
-		"--output-file {output} "
-		"--peak-list {input.overlap} --plot 2>{log}"
+def get_replicate_bws(wildcards):
+    # returns a list of bw of replicates for a given id, if those exist
+    # this might crash if there are no replicates (to debug)
+    if(are_there_replicates(wildcards.id)):
+        return expand(bwdir + "{id}-{idrep}_linearFE.bw", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+    else:
+        raise ValueError("There are no replicates for this ID.")
 
 rule computematrixbysample:
 # calculate scores per genome regions and prepares an intermediate file for plotHeatmap and plotProfiles
-	input:
-		bwfiles=lambda x: map(lambda y: peaksdir + y + "_linearFE.bw", config["combined"][x.combined]),
-		overlap=pairsdir + "{combined}_commonpeaks.bed"
-	output:
-		gzipped=temp(pairsdir + "{combined}-peaks-matrix.mat.gz")
-	conda:
-		"../envs/py3.yml"
-	shell:
-		"computeMatrix scale-regions "
-		"-S {input.bwfiles} -R {input.overlap} "
-		"--beforeRegionStartLength 3000 --afterRegionStartLength 3000 "
-		"--regionBodyLength 5000 --skipZeros "
-		"-o {output.gzipped}"
+    input:
+        bwfiles = get_replicate_bws,
+        overlap = summarydir + "{id}.commonpeaks.bed"
+    output:
+        gzipped = temp(summarydir + "{id}-peaks-matrix.mat.gz"),
+        tab = summarydir + "{id}-peaks-matrix.tab"
+    conda:
+        "../envs/py3.yml"
+    shell:
+        "computeMatrix scale-regions "
+        "-S {input.bwfiles} -R {input.overlap} "
+        "--beforeRegionStartLength 3000 --afterRegionStartLength 3000 "
+        "--regionBodyLength 5000 --skipZeros "
+        "-o {output.gzipped} --outFileNameMatrix {output.tab}"
 
 rule plotheatmapbysample:
 # create heatmap for scores associated with common peaks (by sample)
 # for quality check --- see consistency of peak profiles
 	input:
-		pairsdir + "{combined}-peaks-matrix.mat.gz"
+		summarydir + "{id}-peaks-matrix.mat.gz"
 	output:
-		pairsdir + "{combined}-peaks-matrix-heatmap.png"
+		summarydir + "{id}-peaks-matrix-heatmap.png"
 	conda:
 		"../envs/py3.yml"
 	shell:
@@ -79,5 +100,3 @@ rule plotheatmapbysample:
 		"--startLabel 'peak start' --endLabel 'peak end' "
 		"--yAxisLabel 'average signal' --xAxisLabel ' ' "
 		"--legendLocation none  --kmeans 3"
-
-

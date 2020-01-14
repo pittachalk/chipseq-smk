@@ -49,13 +49,16 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
-        expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique())
+        expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique()),
+        expand(summarydir + "{id}.intersect.bed", id = control_info["id"].unique()),
+        expand(summarydir + "{id}-peaks-matrix-heatmap.png", id = control_info["id"].unique())
+  
 
 #include: "rules/preprocessing.smk"
 #include: "rules/align.smk"
 #include: "rules/callpeak.smk"
 include: "rules/igv.smk"
-#include: "rules/comparepairs.smk"
+include: "rules/comparepairs.smk"
 #include: "rules/summarize.smk"
 #include: "rules/testrandomstuff.smk"
 include: "rules/prototype.smk"

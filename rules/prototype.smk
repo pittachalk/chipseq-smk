@@ -151,29 +151,29 @@ rule bedgraph:
 
 
 
-def are_there_replicates(id):
-    # check if there are replicates for a given id
-    return (len(control_info.loc[id]) > 1)
+# def are_there_replicates(id):
+#     # check if there are replicates for a given id
+#     return (len(control_info.loc[id]) > 1)
 
-def get_replicate_list(wildcards):
-    # returns a list of of replicates for a given id, if those exist
-    # CURRENTLY THIS DOESNT WORK IF THERE ARE INDEED NO REPLICATES
-    # I THINK PE AND SE WORKS BECAUSE THEY COMPLEMENT EACH OTHER
-    # this function might not even be necessary anymore, can merge with proto_combineallreplicates
-    if(are_there_replicates(wildcards.id)):
-        return expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
-    else:
-        raise ValueError("There are no replicates for this ID.")
+# def get_replicate_list(wildcards):
+#     # returns a list of of replicates for a given id, if those exist
+#     # CURRENTLY THIS DOESNT WORK IF THERE ARE INDEED NO REPLICATES
+#     # I THINK PE AND SE WORKS BECAUSE THEY COMPLEMENT EACH OTHER
+#     # this function might not even be necessary anymore, can merge with proto_combineallreplicates
+#     if(are_there_replicates(wildcards.id)):
+#         return expand(peaksdir + "{id}-{idrep}.narrowPeak", id = wildcards.id, idrep = control_info.loc[wildcards.id]["idrep"])
+#     else:
+#         raise ValueError("There are no replicates for this ID.")
 
-rule proto_combineallreplicates:
-    # equivalent to calling common peaks
-    # output: {name}-commonpeaks.txt
-    input:
-        replicates = get_replicate_list
-    output:
-        summarydir + "{id}.commonpeaks.bed"
-    shell:
-        "cat a {input.replicates[0]} b {input.replicates[1]} > {output}"
+# rule proto_combineallreplicates:
+#     # equivalent to calling common peaks
+#     # output: {name}-commonpeaks.txt
+#     input:
+#         replicates = get_replicate_list
+#     output:
+#         summarydir + "{id}.commonpeaks.bed"
+#     shell:
+#         "cat a {input.replicates[0]} b {input.replicates[1]} > {output}"
 
 
 
