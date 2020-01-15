@@ -13,18 +13,18 @@ import itertools
 from os.path import join
 
 # obtain directories from the CONFIG file
-indir       = config["input"]
-outdir      = config["out"]
-logdir      = config["log"]
+indir       = config["sampledir"]
+outdir      = "output/"
+logdir      = "log/"
 
 # subdirectories of outdir
 trimdir     = join(outdir, "trim/", "")
-qcdir       = join(outdir, config["qc"], "")
-bamdir      = join(outdir, config["bam"], "")
+qcdir       = join(outdir, "qc/", "")
+bamdir      = join(outdir, "bam/", "")
 bwdir       = join(outdir, "bw/", "")
-peaksdir    = join(outdir, config["peaks"], "")
-pairsdir    = join(outdir, config["pairs"], "")
-summarydir  = join(outdir, config["summary"], "")
+peaksdir    = join(outdir, "macs2_individual/", "")
+pairsdir    = join(outdir, "macs2_sample/", "")
+summarydir  = join(outdir, "macs2_summary/", "")
 overalldir  = join(outdir, "overall/", "")
 
 # reading CSVs about fastq file and treated-control information

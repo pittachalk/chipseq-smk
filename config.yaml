@@ -3,64 +3,12 @@
 #     Sample information
 ######################################################################
 
-# FASTQ files for each individual sample
-samples:
-  ANT1_S3: 
-    - ANT1_S3_L001_R1_001.fastq.gz
-    - ANT1_S3_L002_R1_001.fastq.gz
-  BOY6_S9:
-    - BOY6_S9_L001_R1_001.fastq.gz
-    - BOY6_S9_L002_R1_001.fastq.gz
-  CAT3_S1:
-    - CAT3_S1_L001_R1_001.fastq.gz
-    - CAT3_S1_L002_R1_001.fastq.gz
-
-# input key for each individual sample
-ids:
-  ANT1_S3: CAT3_S1
-  BOY6_S9: CAT3_S1
-
-# combine samples which are replicates
-combined:
-  ANT1_BOY6:
-    - ANT1_S3
-    - BOY6_S9
-
 # reference genome 
 refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes
 
 # location of raw fastq files
-input: data/samples/
-
-
-######################################################################
-######################################################################
-#     Directory information
-# 
-# directories should to be relative to the Snakemake working directory 
-# e.g. simply write as output/, no need to prefix with "./"
-#
-# an exception can be made for sampledir,
-# as these (large) files might be somewhere else 
-# in this case, use an absolute dir (e.g. /path/to/raw/FASTQ/)
-#
-# IMPORTANT: make sure directories end with a forward slash /
-######################################################################
-
-# location for output and log files of Snakemake pipeline
-out: output/
-log: log/
-
-subdir:
-  tmp: tmp/
-
-# subdirectories within outputdir
-qc: qc/
-bam: bam/
-peaks: macs2_individual/
-pairs: macs2_sample/
-summary: macs2_summary/ 
+sampledir: data/samples/
 
 ######################################################################
 ######################################################################
