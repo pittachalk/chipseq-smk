@@ -18,7 +18,7 @@ rule bwamem:
     params:
         ref=config["refgenome"]
     conda:
-        "../envs/py3.yml"
+        "../envs/align.yml"
     shell:
         "bwa mem -t {threads} {params.ref} {input} 2>{log} >{output}"
 
@@ -29,7 +29,7 @@ rule sort_bam_lanes:
 	output:
 		sortedbam = bamdir + "{name}-rep{replic}-{lane}.sorted.bam"
 	conda:
-		"../envs/py3.yml"
+		"../envs/align.yml"
 	shell:
 		"samtools view -bS {input} | samtools sort - -o {output.sortedbam}"
 
@@ -45,6 +45,8 @@ rule merge_bam_lanes:
         fq = get_bam_lanes
     output:
         bamdir + "{name}-rep{replic}.merged.bam"
+    conda:
+        "../envs/align.yml"
     shell:
         "samtools merge {output} {input}"
 
@@ -57,7 +59,7 @@ rule sortindex_mergedbam:
         sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam",
         bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
     conda:
-        "../envs/py3.yml"
+        "../envs/align.yml"
     shell:
         "samtools flagstat {input} > {output.flagstat}; "
         "samtools view -bS {input} | "

@@ -20,7 +20,7 @@ rule getoverallunion:
 	output:
 		overalldir + "overall.unionpeaks.bed"
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"cat {input} | bedtools sort | bedtools merge -c 4,5,6,7,8,9,10 -o mean,mean,mean,mean,mean,mean,count | "
 		"""awk '$6="."' FS="\t" OFS="\t" """
@@ -38,7 +38,7 @@ rule multibigwigsummary:
 		npzpeak = overalldir + "overallbw-peak.npz", 
 		tabpeak = overalldir + "overallbw-peak.tab"
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"multiBigwigSummary bins -b {input.bwfiles} -o {output.npzbins} "
 		"--outRawCounts {output.tabbins}; "
@@ -56,7 +56,7 @@ rule pcacorr:
 		pcapeak  = overalldir + "overallbw-peak-pca.png",
 		corrpeak = [overalldir + "overallbw-peak-corr-heatmap" + f for f in [".png", ".tab"]]
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"plotPCA -in {input.npzbins} -o {output.pcabins} -T 'PCA: whole genome bins'; "
 		
@@ -81,7 +81,7 @@ rule computematrixall:
 		gzipped = overalldir + "overallbw-peaks-matrix.mat.gz",
 		tab = overalldir + "overallbw-peaks-matrix.tab"
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"computeMatrix scale-regions "
 		"-S {input.bwfiles} -R {input.overlap} "
@@ -96,7 +96,7 @@ rule plotheatmapall:
 	output:
 		overalldir + "overallbw-peaks-matrix-heatmap.png"
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"plotHeatmap -m {input} -out {output} "
 		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "

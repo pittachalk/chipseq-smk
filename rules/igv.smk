@@ -12,7 +12,7 @@ rule igvsort:
 		FE = temp(bwdir + "{id}-{idrep}_linearFE_sorted.bdg"), 
 		logLR = temp(bwdir + "{id}-{idrep}_logLR_sorted.bdg")
 	conda:
-		"../envs/py3.yml"
+		"../envs/igv.yml"
 	shell:
 		"igvtools sort {input.FE} {output.FE}; "
 		"igvtools sort {input.logLR} {output.logLR}"
@@ -28,7 +28,7 @@ rule igvtotdf:
 	params:
 		ref=config["refgenome"]
 	conda:
-		"../envs/py3.yml"
+		"../envs/igv.yml"
 	shell:
 		"igvtools toTDF {input.FE} {output.FE} {params.ref}; "
 		"igvtools toTDF {input.logLR} {output.logLR} {params.ref}"
@@ -43,7 +43,7 @@ rule bedgraphtobigwig:
 	params:
 		ref=config["refchromsizes"]
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"bedGraphToBigWig {input} {params.ref} {output}"
 

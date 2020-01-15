@@ -42,7 +42,7 @@ rule getsampleintersect:
     output:
         summarydir + "{id}.intersect.bed"
     conda:
-        "../envs/py3.yml"
+        "../envs/analyzepeak.yml"
     shell:
         "bedtools intersect -a {input.first} -b {input.others} -wa > {output}"
 
@@ -53,7 +53,7 @@ rule getsampleunion:
     output:
         summarydir + "{id}.commonpeaks.bed"
     conda:
-        "../envs/py3.yml"
+        "../envs/analyzepeak.yml"
     shell:
         "cat {input} | bedtools sort | "
         "bedtools merge -c 4,5,6,7,8,9,10 -o mean,mean,mean,mean,mean,mean,count | "
@@ -77,7 +77,7 @@ rule computematrixbysample:
         gzipped = temp(summarydir + "{id}-peaks-matrix.mat.gz"),
         tab = summarydir + "{id}-peaks-matrix.tab"
     conda:
-        "../envs/py3.yml"
+        "../envs/analyzepeak.yml"
     shell:
         "computeMatrix scale-regions "
         "-S {input.bwfiles} -R {input.overlap} "
@@ -93,7 +93,7 @@ rule plotheatmapbysample:
 	output:
 		summarydir + "{id}-peaks-matrix-heatmap.png"
 	conda:
-		"../envs/py3.yml"
+		"../envs/analyzepeak.yml"
 	shell:
 		"plotHeatmap -m {input} -out {output} "
 		"--heatmapHeight 12 --heatmapWidth 8 --colorMap RdBu "

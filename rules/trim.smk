@@ -14,6 +14,8 @@ rule trimSE:
     params:
         settings = config["trimmomatic"]["settings"]
     threads: 8
+    conda:
+        "../envs/preprocessing.yml"
     shell:
         "trimmomatic SE -threads {threads} {input} {output} {params.settings} 2>{log}"
 
@@ -30,6 +32,8 @@ rule trimPE:
     params:
         settings=config["trimmomatic"]["settings"]
     threads: 8
+    conda:
+        "../envs/preprocessing.yml"
     shell:
         "trimmomatic PE -threads {threads} {input} {output.fq1} {output.fq1_unpaired} {output.fq2} {output.fq2_unpaired} {params.settings} 2>{log}"
 
