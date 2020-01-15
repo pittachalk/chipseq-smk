@@ -11,11 +11,14 @@ This is a custom built pipeline to perform ChIP-seq analysis, developed using th
 * Plot heatmaps of the ChIP signal over these peaks (by sample).
 * Perform PCA of all replicates of all samples.
 
+It works on both **single-end** and **paired-end** read data simultaneously.
+
 ## Contents of this repo
 The most important components are:
 
 * `Snakefile`: rules for each step of the pipeline.
 * `config.yaml`: configuration file with info about samples (directory, names).
+* `info-fastq.csv` and `info-control.csv` provides information about sample files.
 * `envs/`: configuration files specifying package dependencies for the Conda package manager.
 
 Less important is `cluster.json`, which contains custom instructions to utilise multiple cores on a LSF-based machine (like the one I have access to). `data/` contains sample data, and `adapter` provides adapter sequences for trimming.
@@ -68,6 +71,11 @@ UPDATE: install a SLURM profile via this [link](https://github.com/Snakemake-Pro
 ```
 snakemake --profile slurm --cores 8 -npr --use-conda 
 ```
+
+## To-do list
+* `log` directives are missing for some rules.
+* `threads` need to be configured properly for certain rules, and checked for compatibility with the SLURM settings.
+* `qc` rule has not been rewritten for PE yet.
 
 ## Known bugs 
 *Disclaimer: there are some known bugs with the packages, which is independent from this Snakemake pipeline. Please report them to the developers of said packages. I do not have the time or capability to fix them myself.*
