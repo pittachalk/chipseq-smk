@@ -1,0 +1,8 @@
+name: analyzepeak
+channels:
+ - bioconda
+dependencies:
+ - deeptools=3.3
+ - bedtools=2.29
+ - ucsc-bigwigmerge=366
+ - ucsc-bedgraphtobigwig=366

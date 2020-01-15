@@ -1,0 +1,7 @@
+name: igv
+channels:
+ - bioconda
+ - conda-forge
+dependencies:
+ - igvtools=2.5
+ - openjdk=11.0
