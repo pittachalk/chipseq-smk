@@ -76,6 +76,7 @@ snakemake --profile slurm --cores 8 -npr --use-conda
 * `log` directives are missing for some rules.
 * `threads` need to be configured properly for certain rules, and checked for compatibility with the SLURM settings.
 * `qc` rule has not been rewritten for PE yet.
+* Try the `reports` feature. Can things from rule `all` be excluded if theya re in reports?
 
 ## Known bugs 
 *Disclaimer: there are some known bugs with the packages, which is independent from this Snakemake pipeline. Please report them to the developers of said packages. I do not have the time or capability to fix them myself.*
