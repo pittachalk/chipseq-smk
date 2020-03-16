@@ -50,17 +50,27 @@ rule merge_bam_lanes:
     shell:
         "samtools merge {output} {input}"
 
-rule sortindex_mergedbam:
-    # get alignment stat with flagstat, sort SAM file, convert to BAM, index BAM file
+rule sort_mergedbam:
+    # get alignment stat with flagstat, sort SAM file, convert to BAM
     input:
         bamdir + "{name}-rep{replic}.merged.bam"
     output:
         flagstat = bamdir + "{name}-rep{replic}.merged.alignstat.txt",
-        sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam",
-        bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
+        sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam"
     conda:
         "../envs/align.yml"
     shell:
         "samtools flagstat {input} > {output.flagstat}; "
         "samtools view -bS {input} | "
         "samtools sort - -o {output.sortedbam}"
+
+rule index_mergedbam:
+    # index sorted bam files
+    input:
+        bamdir + "{name}-rep{replic}.merged.sorted.bam"
+    output:
+        bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
+    conda:
+        "../envs/align.yml"
+    shell:
+        "samtools index {input}"

@@ -11,6 +11,7 @@ configfile: "config.yaml"  # put quotes
 import pandas as pd
 import itertools
 from os.path import join
+import generate_output_files as gof
 
 # obtain directories from the CONFIG file
 indir       = config["sampledir"]
@@ -50,6 +51,7 @@ Note that the user can comment out what is not required
 
 rule all:
     input:
+        gof.bam_indexes(bamdir, fastq_info),
         expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}.intersect.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}-peaks-matrix-heatmap.png", id = control_info["id"].unique()),
