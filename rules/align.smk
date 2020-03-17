@@ -50,27 +50,38 @@ rule merge_bam_lanes:
     shell:
         "samtools merge {output} {input}"
 
-rule sort_mergedbam:
-    # get alignment stat with flagstat, sort SAM file, convert to BAM
+rule flagstat:
+    # get alignment stat with flagstat
     input:
         bamdir + "{name}-rep{replic}.merged.bam"
     output:
-        flagstat = bamdir + "{name}-rep{replic}.merged.alignstat.txt",
-        sortedbam = bamdir + "{name}-rep{replic}.merged.sorted.bam"
+        bamdir + "{name}-rep{replic}.merged.alignstat.txt"
     conda:
         "../envs/align.yml"
     shell:
-        "samtools flagstat {input} > {output.flagstat}; "
-        "samtools view -bS {input} | "
-        "samtools sort - -o {output.sortedbam}"
+        "samtools flagstat {input} > {output}"
+
+rule sort_mergedbam:
+    # sort SAM file, convert to BAM
+    input:
+        bamdir + "{name}-rep{replic}.merged.bam"
+    output:
+        bamdir + "{name}-rep{replic}.merged.sorted.bam"
+    conda:
+        "../envs/align.yml"
+    shell:
+        "samtools view -bS {input} | samtools sort - -o {output}"
 
 rule index_mergedbam:
     # index sorted bam files
+    # alignstat file (as input) is to "trick" Snakemake
+    # so I do not need to specify them in rule all
     input:
-        bamdir + "{name}-rep{replic}.merged.sorted.bam"
+        bam = bamdir + "{name}-rep{replic}.merged.sorted.bam",
+        alignstat = bamdir + "{name}-rep{replic}.merged.alignstat.txt"
     output:
         bai = bamdir + "{name}-rep{replic}.merged.sorted.bam.bai"
     conda:
         "../envs/align.yml"
     shell:
-        "samtools index {input}"
+        "samtools index {input.bam}"
