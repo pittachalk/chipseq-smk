@@ -85,3 +85,29 @@ rule index_mergedbam:
         "../envs/align.yml"
     shell:
         "samtools index {input.bam}"
+
+rule convert_bam_to_bedgraph:
+    # convert merged bam files into a bedgraph (needed for SEACR)
+    # also, bedgraph format is needed by igv to convert to TDF
+    # need to add scaling factors later on
+    input:
+        bamdir + "{name}-rep{replic}.merged.sorted.bam"
+    output:
+        bamdir + "{name}-rep{replic}.merged.sorted.bedgraph"
+    conda:
+        "../envs/analyzepeak.yml"
+    shell:
+        "bamCoverage -b {input} -o {output} -of bedgraph --scaleFactor 1"
+
+rule igv_to_tdf:
+    # convert bedgraph to TDF for IGV
+    input: 
+        bamdir + "{name}-rep{replic}.merged.sorted.bedgraph"
+    output:
+        bamdir + "{name}-rep{replic}.merged.sorted.tdf"
+    params:
+        ref=config["refgenome"]
+    conda:
+        "../envs/igv.yml"
+    shell:
+        "igvtools toTDF {input} {output} {params.ref}"

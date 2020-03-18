@@ -52,6 +52,7 @@ Note that the user can comment out what is not required
 rule all:
     input:
         gof.bam_indexes(bamdir, fastq_info),
+        gof.tdf_files(bamdir, fastq_info),
         expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}.intersect.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}-peaks-matrix-heatmap.png", id = control_info["id"].unique()),
