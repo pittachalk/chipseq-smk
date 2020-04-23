@@ -111,3 +111,30 @@ rule igv_to_tdf:
         "../envs/igv.yml"
     shell:
         "igvtools toTDF {input} {output} {params.ref}"
+
+
+def get_treatvscontrol_bedgraph(wildcards):
+    # this should give a single row describing the treatment vs control pairing
+    x = control_info[(control_info["id"] == wildcards.id) & (control_info["idrep"] == wildcards.idrep)]
+
+    treat = expand(bamdir + "{treatname}-rep{treatrep}.merged.sorted.bedgraph",
+        treatname = x["treatname"], treatrep = x["treatrep"])
+    control = expand(bamdir + "{controlname}-rep{controlrep}.merged.sorted.bedgraph", 
+        controlname = x["controlname"], controlrep = x["controlrep"])
+    
+    assert (len(treat) == 1), "treated list not length 1, are id-idrep pairs unique?"
+    assert (len(control) == 1), "control list not length 1, are id-idrep pairs unique?"
+    return (treat[0], control[0])
+
+rule seacr:
+    # call peaks using SEACR
+    input:
+        bedgraph = get_treatvscontrol_bedgraph
+    output:
+        relaxed = peaksdir + "{id}-rep{idrep}.relaxed.bed"
+    log:
+        logdir + "seacr/{id}-{idrep}-relaxed.log"
+    shell:
+        "bash script/SEACR_1.3.sh {input.bedgraph[0]} {input.bedgraph[1]} 'norm' 'relaxed' {output.relaxed} 2> {log}"
+# should add a rename option
+# also, the log is not redicreting for some reason

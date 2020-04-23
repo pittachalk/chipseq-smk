@@ -16,3 +16,7 @@ def tdf_files(bamdir, fastq_info):
     tdf_files = expand(bamdir + "{name}-rep{replic}.merged.sorted.tdf", 
                        name=fastq_info["name"].unique(), replic=fastq_info["rep"].unique())
     return tdf_files
+
+def seacr_peaks(peaksdir, control_info):
+    seacr_peaks = expand(peaksdir + "{id}-rep{idrep}.relaxed.bed", id=control_info["id"].unique(), idrep=control_info["idrep"].unique())
+    return seacr_peaks

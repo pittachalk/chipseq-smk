@@ -23,7 +23,7 @@ trimdir     = join(outdir, "trim/", "")
 qcdir       = join(outdir, "qc/", "")
 bamdir      = join(outdir, "bam/", "")
 bwdir       = join(outdir, "bw/", "")
-peaksdir    = join(outdir, "macs2_individual/", "")
+peaksdir    = join(outdir, "peaks/", "") #join(outdir, "macs2_individual/", "")
 pairsdir    = join(outdir, "macs2_sample/", "")
 summarydir  = join(outdir, "macs2_summary/", "")
 overalldir  = join(outdir, "overall/", "")
@@ -53,6 +53,7 @@ rule all:
     input:
         gof.bam_indexes(bamdir, fastq_info),
         gof.tdf_files(bamdir, fastq_info),
+        gof.seacr_peaks(peaksdir, control_info),
         expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}.intersect.bed", id = control_info["id"].unique()),
         expand(summarydir + "{id}-peaks-matrix-heatmap.png", id = control_info["id"].unique()),
