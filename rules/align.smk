@@ -135,6 +135,7 @@ rule seacr:
     log:
         logdir + "seacr/{id}-{idrep}-relaxed.log"
     shell:
-        "bash script/SEACR_1.3.sh {input.bedgraph[0]} {input.bedgraph[1]} 'norm' 'relaxed' {output.relaxed} 2> {log}"
+        "bash script/SEACR_1.3.sh {input.bedgraph[0]} {input.bedgraph[1]} 'norm' 'relaxed' {output.relaxed} 2> {log}; "
+        "mv {output.relaxed}.relaxed.bed {output.relaxed}"
 # should add a rename option
 # also, the log is not redicreting for some reason
