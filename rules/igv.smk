@@ -1,9 +1,17 @@
-######################################################################
-######################################################################
-#     Convert bedgraphs to the TDF and BigWig binary formats
-######################################################################
+rule igv_convert_bedgraph_to_tdf:
+    # convert bedgraph to TDF for IGV
+    input: 
+        bamdir + "{name}-rep{replic}.merged.sorted.bedgraph"
+    output:
+        bamdir + "{name}-rep{replic}.merged.sorted.tdf"
+    params:
+        ref=config["refgenome"]
+    conda:
+        "../envs/igv.yml"
+    shell:
+        "igvtools toTDF {input} {output} {params.ref}"
 
-rule igvsort:
+rule igv_sort_bdgcmp:
 # sort bedgraph
 	input: 
 		FE = peaksdir + "{id}-{idrep}_linearFE.bdg",
@@ -17,7 +25,7 @@ rule igvsort:
 		"igvtools sort {input.FE} {output.FE}; "
 		"igvtools sort {input.logLR} {output.logLR}"
 
-rule igvtotdf:
+rule igv_convert_bdgcmp_to_tdf:
 # convert bedgraph to TDF for IGV
 	input: 
 		FE = bwdir + "{id}-{idrep}_linearFE_sorted.bdg",
@@ -33,7 +41,9 @@ rule igvtotdf:
 		"igvtools toTDF {input.FE} {output.FE} {params.ref}; "
 		"igvtools toTDF {input.logLR} {output.logLR} {params.ref}"
 
+
 rule bedgraphtobigwig:
+# UNNEDDED FOR NOT, REMEMBER TO ADD "REP" BEFORE IDREP
 # convert bedgraph to bigwig for deeptools
 # this is only done for the linear fold enrichment bedgraph
 	input: 

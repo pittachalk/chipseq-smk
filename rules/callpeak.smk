@@ -11,7 +11,7 @@ def get_treatvscontrol_bedgraph(wildcards):
     assert (len(control) == 1), "control list not length 1, are id-idrep pairs unique?"
     return (treat[0], control[0])
 
-def get_treatvscontrol(wildcards):
+def get_treatvscontrol_mergedbam(wildcards):
     # this should give a single row describing the treatment vs control pairing
     x = control_info[(control_info["id"] == wildcards.id) & (control_info["idrep"] == wildcards.idrep)]
 
@@ -23,6 +23,19 @@ def get_treatvscontrol(wildcards):
     assert (len(treat) == 1), "treated list not length 1, are id-idrep pairs unique?"
     assert (len(control) == 1), "control list not length 1, are id-idrep pairs unique?"
     return (treat[0], control[0])
+
+rule convert_bam_to_bedgraph:
+    # convert merged bam files into a bedgraph (needed for SEACR)
+    # also, bedgraph format is needed by igv to convert to TDF
+    # need to add scaling factors later on
+    input:
+        bamdir + "{name}-rep{replic}.merged.sorted.bam"
+    output:
+        bamdir + "{name}-rep{replic}.merged.sorted.bedgraph"
+    conda:
+        "../envs/analyzepeak.yml"
+    shell:
+        "bamCoverage -b {input} -o {output} -of bedgraph --scaleFactor 1"
 
 rule seacr:
     # call peaks using SEACR
@@ -41,7 +54,7 @@ rule seacr:
 rule macs2:
     # call peaks with MACS2 2.1.2, run in a Python 2 environment
     input:
-        bam = get_treatvscontrol
+        bam = get_treatvscontrol_mergedbam
     output:
         peaksdir + "{id}-rep{idrep}.narrowPeak",
         peaksdir + "{id}-rep{idrep}_treat_pileup.bdg",
