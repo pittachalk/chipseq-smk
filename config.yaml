@@ -1,19 +1,9 @@
-######################################################################
-######################################################################
-#     Sample information
-######################################################################
-
 # reference genome 
 refgenome: data/genome.fa
 refchromsizes: data/genome.chrom-sizes
 
 # location of raw fastq files
 sampledir: data/samples/
-
-######################################################################
-######################################################################
-#     Settings for packages
-######################################################################
 
 # settings for trimmomatic
 # there should be a space after each line of settings
