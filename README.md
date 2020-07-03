@@ -13,6 +13,33 @@ This is a custom built pipeline to perform ChIP-seq analysis, developed using th
 
 It works on both **single-end** and **paired-end** read data simultaneously.
 
+
+## Ongoing modifications 3 July
+For now, I'm modifying this pipeline to do only up to the peak calling steps.
+
+```
+snakemake  --dag | dot -Tsvg > dag.svg
+```
+
+Temporarily moved out of the rule `all`.
+```
+expand(summarydir + "{id}.commonpeaks.bed", id = control_info["id"].unique()),
+expand(summarydir + "{id}.intersect.bed", id = control_info["id"].unique()),
+expand(summarydir + "{id}-peaks-matrix-heatmap.png", id = control_info["id"].unique()),
+overalldir + "overall.unionpeaks.bed",
+overalldir + "overallbw-peaks-matrix-heatmap.png"
+
+pairsdir    = join(outdir, "macs2_sample/", "")
+summarydir  = join(outdir, "macs2_summary/", "")
+overalldir  = join(outdir, "overall/", "")
+
+include: "rules/comparepairs.smk"
+include: "rules/summarize.smk"
+include: "rules/testrandomstuff.smk"
+```
+
+
+
 ## Contents of this repo
 The most important components are:
 
