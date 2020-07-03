@@ -3,7 +3,6 @@ configfile: "config.yaml"
 import pandas as pd
 import itertools
 from os.path import join
-import generate_output_files as gof
 
 # obtain directories from the config file
 indir       = config["sampledir"]
