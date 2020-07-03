@@ -34,12 +34,14 @@ set1 = set(expand("{name}-rep{replic}", zip, name=fastq_info["name"], replic=fas
 set2 = set(expand("{id}-rep{idrep}", zip, id=control_info["id"], idrep=control_info["idrep"]))
 rule all:
     input:
-        expand(bamdir + "{name_rep}.merged.alignstat.txt", name_rep=set1),
-        expand(bamdir + "{name_rep}.merged.sorted.bam", name_rep=set1),
-        expand(bamdir + "{name_rep}.merged.sorted.bam.bai", name_rep=set1),
-        expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep=set1),
-        expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep=set1),
-        expand(peaksdir + "{id_idrep}.relaxed.bed", id_idrep=set2)
+        expand(bamdir + "{name_rep}.merged.alignstat.txt", name_rep = set1),
+        expand(bamdir + "{name_rep}.merged.sorted.bam", name_rep = set1),
+        expand(bamdir + "{name_rep}.merged.sorted.bam.bai", name_rep = set1),
+        expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep = set1),
+        expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep = set1),
+        expand(peaksdir + "{id_idrep}.narrowPeak", id_idrep = set2),
+        expand(peaksdir + "{id_idrep}_linearFE.bdg", id_idrep = set2),
+        expand(peaksdir + "{id_idrep}.relaxed.bed", id_idrep = set2)
 
 # rules to include
 include: "rules/trim.smk"
