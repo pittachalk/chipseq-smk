@@ -3,6 +3,22 @@
 #     Summary files
 ######################################################################
 
+
+rule bedgraphtobigwig:
+# UNNEDDED FOR NOT, REMEMBER TO ADD "REP" BEFORE IDREP
+# convert bedgraph to bigwig for deeptools
+# this is only done for the linear fold enrichment bedgraph
+	input: 
+		bwdir + "{id}-{idrep}_linearFE_sorted.bdg"
+	output: 
+		bwdir + "{id}-{idrep}_linearFE.bw"
+	params:
+		ref=config["refchromsizes"]
+	conda:
+		"../envs/analyzepeak.yml"
+	shell:
+		"bedGraphToBigWig {input} {params.ref} {output}"
+
 def get_replicate_bws(wildcards):
     # returns a list of bw of replicates for a given id, if those exist
     # this might crash if there are no replicates (to debug)

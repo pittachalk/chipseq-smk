@@ -39,7 +39,8 @@ rule all:
         expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep = set1),
         expand(bamdir + "{name_rep}.merged.sorted.tdf", name_rep = set1),
         expand(peaksdir + "{id_idrep}.narrowPeak", id_idrep = set2),
-        expand(peaksdir + "{id_idrep}_linearFE.bdg", id_idrep = set2),
+        expand(peaksdir + "{id_idrep}_linearFE_sorted.bdg", id_idrep = set2),
+        expand(peaksdir + "{id_idrep}_linearFE_sorted.tdf", id_idrep = set2),
         expand(peaksdir + "{id_idrep}.relaxed.bed", id_idrep = set2)
 
 # rules to include
