@@ -19,6 +19,14 @@ For now, I'm modifying this pipeline to do only up to the peak calling steps.
 
 ```
 snakemake  --dag | dot -Tsvg > dag.svg
+
+mkdir slurm/
+snakemake --cores 8 --restart-times 1 \
+  --printshellcmds --keep-going --use-conda \
+  --cluster-config ./cluster.json --cluster \
+  "sbatch -J {cluster.jobname} -o {cluster.output} \
+  -c {cluster.cores} -N {cluster.nodes} -p {cluster.partition} \
+  --mail-user {cluster.mailuser} --mail-type {cluster.mailtype}"
 ```
 
 Temporarily moved out of the rule `all`.
